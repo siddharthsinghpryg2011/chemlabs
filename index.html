@@ -1,0 +1,3249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ChemCraft — Virtual Chemistry Reaction Lab</title>
+  <style>
+    :root {
+      --bg-base: #0e0e0e;
+      --bg-surface: #151515;
+      --bg-card: #1b1b1b;
+      --bg-card-hover: #222222;
+      --bg-elevated: #272727;
+      --border-subtle: #282828;
+      --border-strong: #3c3c3c;
+      --text-primary: #efefef;
+      --text-secondary: #9c9c9c;
+      --text-muted: #686868;
+      --dot-grid: #242424;
+      --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.45);
+      --shadow-drag: 0 16px 36px rgba(0, 0, 0, 0.75);
+
+      --cat-alkali: #dc2626;
+      --cat-alkaline: #ea580c;
+      --cat-transition: #ca8a04;
+      --cat-post-transition: #16a34a;
+      --cat-metalloid: #0d9488;
+      --cat-nonmetal: #2563eb;
+      --cat-halogen: #4f46e5;
+      --cat-noble: #7c3aed;
+    }
+
+    body.theme-light {
+      --bg-base: #f5f5f4;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f7f7f6;
+      --bg-elevated: #efefee;
+      --border-subtle: #e4e4e2;
+      --border-strong: #cfcfcc;
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-muted: #8e8e93;
+      --dot-grid: #d6d6d2;
+      --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.06);
+      --shadow-drag: 0 12px 28px rgba(0, 0, 0, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.4;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: 50px 1fr;
+      width: 100vw;
+      height: 100vh;
+      transition: grid-template-columns 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .app-shell.sidebar-collapsed {
+      grid-template-columns: 0px 1fr;
+    }
+
+    /* Top Header Bar */
+    .topbar {
+      grid-column: 1 / -1;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      z-index: 40;
+      gap: 8px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      color: var(--text-muted);
+      font-weight: 400;
+      font-size: 12px;
+    }
+
+    .conditions-bar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--bg-base);
+      padding: 3px;
+      border-radius: 7px;
+      border: 1px solid var(--border-subtle);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .conditions-bar::-webkit-scrollbar { display: none; }
+
+    .condition-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cond-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .cond-btn:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .cond-btn.active {
+      background: var(--bg-card);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .discovery-pill {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .discovery-pill strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-danger:hover {
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #ef4444;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 50px);
+      overflow: hidden;
+      z-index: 30;
+      width: 280px;
+      transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.18s ease;
+    }
+
+    .app-shell.sidebar-collapsed .sidebar {
+      transform: translateX(-280px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-header {
+      padding: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 9px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 9px 6px 29px;
+      color: var(--text-primary);
+      font-size: 12px;
+      outline: none;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-strong);
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .filter-tab {
+      flex: 1;
+      padding: 4px 6px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .filter-tab.active {
+      background: var(--bg-base);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    .inventory-list {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      padding: 9px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .inventory-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .inventory-list::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 4px;
+    }
+
+    .inv-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 7px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: border-color 0.15s, background 0.15s;
+      touch-action: pan-y;
+    }
+
+    .inv-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    .inv-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .inv-swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(128,128,128,0.35);
+    }
+
+    .inv-formula {
+      font-weight: 600;
+      font-size: 12.5px;
+      color: var(--text-primary);
+    }
+
+    .inv-state {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .inv-name {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-footer {
+      padding: 9px 10px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+
+    .pt-toggle-btn {
+      width: 100%;
+      justify-content: center;
+      padding: 7px 10px;
+    }
+
+    /* Center Workspace Viewport */
+    .workspace-wrap {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 50px);
+      background-color: var(--bg-base);
+      background-image: radial-gradient(var(--dot-grid) 1px, transparent 1px);
+      background-size: 22px 22px;
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .workspace-wrap.panning {
+      cursor: grabbing;
+    }
+
+    .canvas-board {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform-origin: 0 0;
+      will-change: transform;
+      overflow: visible;
+    }
+
+    .canvas-hud-top {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .suggestion-pill {
+      pointer-events: auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-card);
+      max-width: 580px;
+    }
+
+    .suggestion-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      flex-shrink: 0;
+    }
+
+    .suggestion-text {
+      color: var(--text-primary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .suggestion-action {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .suggestion-action:hover {
+      background: var(--bg-elevated);
+    }
+
+    .active-condition-banner {
+      pointer-events: auto;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+    }
+
+    .active-condition-banner.visible {
+      display: flex;
+    }
+
+    .canvas-hud-bottom-left {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .delete-zone {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-strong);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+      cursor: pointer;
+      box-shadow: var(--shadow-card);
+    }
+
+    .delete-zone:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+    }
+
+    .delete-zone.drag-active {
+      border-style: solid;
+      border-color: var(--border-strong);
+    }
+
+    .delete-zone.drag-hover {
+      transform: scale(1.14);
+      background: rgba(239, 68, 68, 0.14);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .zoom-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .zoom-btn:hover {
+      background: var(--bg-elevated);
+    }
+
+    .zoom-readout {
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--text-secondary);
+      padding: 0 6px;
+      min-width: 44px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Reaction Canvas Nodes */
+    .chem-node {
+      position: absolute;
+      width: 198px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 9px 10px;
+      cursor: grab;
+      box-shadow: var(--shadow-card);
+      transition: box-shadow 0.15s, border-color 0.15s;
+      z-index: 10;
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    .chem-node:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .chem-node.dragging {
+      cursor: grabbing;
+      z-index: 100;
+      box-shadow: var(--shadow-drag);
+    }
+
+    .chem-node.merge-target {
+      border-color: var(--text-primary);
+      box-shadow: 0 0 0 1.5px var(--text-primary), var(--shadow-card);
+    }
+
+    .chem-node.selected {
+      border-color: var(--text-primary);
+      box-shadow: 0 0 0 1px var(--text-primary), var(--shadow-card);
+    }
+
+    .node-color-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      opacity: 0.85;
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+      margin-bottom: 3px;
+      gap: 6px;
+    }
+
+    .node-formula-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .node-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(128, 128, 128, 0.35);
+      flex-shrink: 0;
+    }
+
+    .node-formula {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .state-switcher {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 1px;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+
+    .state-opt {
+      font-size: 9.5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .state-opt:hover {
+      color: var(--text-primary);
+    }
+
+    .state-opt.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .node-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+
+    .node-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .hazard-tag {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      background: var(--bg-base);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    @keyframes nodeShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-3px); }
+    }
+
+    .anim-shake {
+      animation: nodeShake 0.3s ease;
+      border-color: #ef4444 !important;
+    }
+
+    @keyframes nodePop {
+      0% { transform: scale(0.84); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .anim-spawn {
+      animation: nodePop 0.24s ease-out;
+    }
+
+    .fx-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .bubble-dot {
+      position: absolute;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      opacity: 0.55;
+      animation: bubbleRise 1.1s ease-in forwards;
+    }
+
+    @keyframes bubbleRise {
+      0% { transform: translateY(0) scale(0.7); opacity: 0.65; }
+      100% { transform: translateY(-60px) scale(1.1); opacity: 0; }
+    }
+
+    .precipitate-layer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      opacity: 0.6;
+    }
+
+    /* Chemical Inspector Card */
+    .inspector-card {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 292px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      padding: 13px;
+      box-shadow: var(--shadow-card);
+      z-index: 25;
+      display: none;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .inspector-card.visible {
+      display: flex;
+    }
+
+    .insp-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 7px;
+    }
+
+    .insp-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .insp-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(128,128,128,0.35);
+    }
+
+    .insp-formula {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .insp-name {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .insp-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+    }
+
+    .insp-close:hover {
+      color: var(--text-primary);
+    }
+
+    .insp-eq-box {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: var(--text-primary);
+    }
+
+    .insp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .insp-stat {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 5px 7px;
+    }
+
+    .insp-stat-label {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .insp-stat-val {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1px;
+    }
+
+    .insp-state-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+
+    .insp-state-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .insp-state-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    .insp-state-btn {
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .insp-state-btn.active {
+      background: var(--text-primary);
+      color: var(--bg-base);
+      border-color: var(--text-primary);
+    }
+
+    .insp-desc {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Reaction History Panel */
+    .history-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 340px;
+      max-width: 92vw;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-strong);
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .history-panel.open {
+      transform: translateX(0);
+    }
+
+    .history-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-title {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .history-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 36px 16px;
+    }
+
+    .history-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 9px 11px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .history-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .hist-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .hist-eq {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .hist-replay-badge {
+      font-size: 10px;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--bg-base);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .hist-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    /* Animated Reaction Replay Modal */
+    .replay-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.68);
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .replay-modal.open {
+      display: flex;
+    }
+
+    .replay-box {
+      width: 100%;
+      max-width: 580px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .replay-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 10px;
+    }
+
+    .replay-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .replay-stage {
+      min-height: 150px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stage-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-width: 104px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px) scale(0.92);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .stage-card.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .stage-card-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin: 0 auto 5px;
+      border: 1px solid rgba(128,128,128,0.35);
+    }
+
+    .stage-card-formula {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stage-card-name {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .stage-op {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .stage-op.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .stage-arrow-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .stage-arrow-wrap.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .stage-cond-tag {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .replay-caption {
+      font-size: 12.5px;
+      color: var(--text-primary);
+      text-align: center;
+      min-height: 20px;
+      font-weight: 500;
+    }
+
+    .replay-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .toast-container {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      padding: 7px 13px;
+      border-radius: 7px;
+      font-size: 12px;
+      box-shadow: var(--shadow-card);
+      animation: toastIn 0.18s ease-out;
+    }
+
+    .toast.warn {
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Periodic Table Drawer */
+    .pt-drawer {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 80;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .pt-drawer.open {
+      display: flex;
+    }
+
+    .pt-sheet {
+      width: 100%;
+      max-width: 1260px;
+      max-height: 86vh;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-strong);
+      border-left: 1px solid var(--border-subtle);
+      border-right: 1px solid var(--border-subtle);
+      border-radius: 12px 12px 0 0;
+      padding: 14px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .pt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pt-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pt-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .pt-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+    }
+
+    .pt-scroll {
+      overflow: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-x pan-y;
+      padding-bottom: 4px;
+    }
+
+    .pt-grid {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(50px, 1fr));
+      grid-template-rows: repeat(7, 50px);
+      gap: 4px;
+      min-width: 940px;
+    }
+
+    .pt-cell {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 5px;
+      padding: 3px 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.12s;
+      touch-action: pan-x pan-y;
+    }
+
+    .pt-cell:hover {
+      transform: scale(1.06);
+      z-index: 10;
+      border-color: var(--text-primary);
+    }
+
+    .pt-num {
+      font-size: 8.5px;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    .pt-sym {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .pt-el-name {
+      font-size: 8px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    .pt-cell[data-cat="alkali"] { border-bottom: 2px solid var(--cat-alkali); }
+    .pt-cell[data-cat="alkaline"] { border-bottom: 2px solid var(--cat-alkaline); }
+    .pt-cell[data-cat="transition"] { border-bottom: 2px solid var(--cat-transition); }
+    .pt-cell[data-cat="post-transition"] { border-bottom: 2px solid var(--cat-post-transition); }
+    .pt-cell[data-cat="metalloid"] { border-bottom: 2px solid var(--cat-metalloid); }
+    .pt-cell[data-cat="nonmetal"] { border-bottom: 2px solid var(--cat-nonmetal); }
+    .pt-cell[data-cat="halogen"] { border-bottom: 2px solid var(--cat-halogen); }
+    .pt-cell[data-cat="noble"] { border-bottom: 2px solid var(--cat-noble); }
+
+    @media (max-width: 820px) {
+      .app-shell {
+        grid-template-columns: 230px 1fr;
+      }
+      .app-shell.sidebar-collapsed {
+        grid-template-columns: 0px 1fr;
+      }
+      .sidebar {
+        width: 230px;
+      }
+      .app-shell.sidebar-collapsed .sidebar {
+        transform: translateX(-230px);
+      }
+      .brand-sub, .condition-label { display: none; }
+      .suggestion-pill { max-width: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <!-- Top Header Bar -->
+    <header class="topbar">
+      <div class="brand-group">
+        <button class="icon-btn" id="sidebarToggleBtn" title="Toggle Elements Panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="brand">
+          <span>ChemCraft <span class="brand-sub">Reaction Lab</span></span>
+        </div>
+      </div>
+
+      <div class="conditions-bar" id="conditionsBar">
+        <span class="condition-label">Conditions</span>
+        <button class="cond-btn" data-cond="heat" title="Apply thermal energy (Bunsen burner)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          Heat
+        </button>
+        <button class="cond-btn" data-cond="electrolysis" title="Apply electric current">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Electrolysis
+        </button>
+        <button class="cond-btn" data-cond="aqueous" title="React in aqueous medium">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          Aqueous
+        </button>
+        <button class="cond-btn" data-cond="catalyst" title="Use catalytic surface">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Catalyst
+        </button>
+      </div>
+
+      <div class="top-actions">
+        <div class="discovery-pill">
+          <span>Discovered:</span>
+          <strong id="discoveryCounter">0 / 0</strong>
+        </div>
+
+        <button class="btn" id="historyToggleBtn" title="View Reaction History">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          History (<span id="historyCountBadge">0</span>)
+        </button>
+
+        <button class="icon-btn" id="themeToggleBtn" title="Switch Black / White Theme">
+          <svg id="themeIconSun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg id="themeIconMoon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+        <button class="btn" id="clearCanvasBtn" title="Clear all cards from canvas">
+          Clear
+        </button>
+        <button class="btn btn-danger" id="resetProgressBtn" title="Reset discovered compounds & history">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Left Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="search-box">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search formula or name..." />
+        </div>
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="element">Elements</button>
+          <button class="filter-tab" data-filter="compound">Compounds</button>
+        </div>
+      </div>
+
+      <div class="inventory-list" id="inventoryList"></div>
+
+      <div class="sidebar-footer">
+        <button class="btn pt-toggle-btn" id="openPtBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Periodic Table
+        </button>
+      </div>
+    </aside>
+
+    <!-- Center Reaction Arena -->
+    <main class="workspace-wrap" id="workspace">
+      <div class="canvas-board" id="canvasBoard"></div>
+
+      <div class="canvas-hud-top">
+        <div class="suggestion-pill" id="suggestionPill">
+          <span class="suggestion-badge">Suggestion</span>
+          <span class="suggestion-text" id="suggestionText">Combine CuO + HCl → Copper(II) Chloride (CuCl₂) + H₂O</span>
+          <button class="suggestion-action" id="nextSuggestionBtn" title="Show another reaction hint">Next</button>
+        </div>
+
+        <div class="active-condition-banner" id="conditionBanner">
+          <span id="conditionBannerText">Condition Active</span>
+        </div>
+      </div>
+
+      <div class="canvas-hud-bottom-left">
+        <div class="delete-zone" id="deleteZone" title="Drag any card here to delete">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </div>
+
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOutBtn" title="Zoom Out">−</button>
+          <span class="zoom-readout" id="zoomResetBtn" title="Reset Zoom & Center">100%</span>
+          <button class="zoom-btn" id="zoomInBtn" title="Zoom In">+</button>
+        </div>
+      </div>
+
+      <!-- Inspector Card -->
+      <section class="inspector-card" id="inspectorCard">
+        <div class="insp-header">
+          <div class="insp-title-wrap">
+            <div class="insp-swatch" id="inspSwatch"></div>
+            <div>
+              <div class="insp-formula" id="inspFormula">H₂O</div>
+              <div class="insp-name" id="inspName">Water</div>
+            </div>
+          </div>
+          <button class="insp-close" id="closeInspectorBtn" title="Close Inspector">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="insp-eq-box" id="inspEquation">2H₂ + O₂ → 2H₂O</div>
+
+        <div class="insp-state-row">
+          <span class="insp-state-label">Physical Phase</span>
+          <div class="insp-state-btns" id="inspStateBtns"></div>
+        </div>
+
+        <div class="insp-grid">
+          <div class="insp-stat">
+            <div class="insp-stat-label">Molar Mass</div>
+            <div class="insp-stat-val" id="inspMass">18.015 g/mol</div>
+          </div>
+          <div class="insp-stat">
+            <div class="insp-stat-label">Active State</div>
+            <div class="insp-stat-val" id="inspState">Liquid (l)</div>
+          </div>
+          <div class="insp-stat">
+            <div class="insp-stat-label">Nature / pH</div>
+            <div class="insp-stat-val" id="inspNature">Neutral (pH 7.0)</div>
+          </div>
+          <div class="insp-stat">
+            <div class="insp-stat-label">Appearance</div>
+            <div class="insp-stat-val" id="inspAppearance">Colorless liquid</div>
+          </div>
+        </div>
+
+        <p class="insp-desc" id="inspDesc">Universal polar solvent essential for aqueous ionic reactions.</p>
+      </section>
+
+      <!-- Reaction History Panel -->
+      <aside class="history-panel" id="historyPanel">
+        <div class="history-header">
+          <div>
+            <div class="history-title">Reaction History</div>
+            <div class="history-sub">Click any past reaction to watch step-by-step animation</div>
+          </div>
+          <button class="insp-close" id="closeHistoryBtn" title="Close History">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">No reactions performed yet. Combine elements on the canvas to log reactions here.</div>
+        </div>
+      </aside>
+
+      <div class="toast-container" id="toastContainer"></div>
+    </main>
+  </div>
+
+  <!-- Step-by-Step Animated Reaction Replay Modal -->
+  <div class="replay-modal" id="replayModal">
+    <div class="replay-box">
+      <div class="replay-header">
+        <div>
+          <div class="replay-title">Reaction Process Replay</div>
+          <div style="font-size:11px; color:var(--text-muted);" id="replayTimestamp">Recorded reaction</div>
+        </div>
+        <button class="insp-close" id="closeReplayBtn" title="Close Replay">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="replay-stage" id="replayStage"></div>
+      <div class="replay-caption" id="replayCaption">Initializing reaction steps...</div>
+
+      <div class="replay-footer">
+        <button class="btn" id="replayAgainBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Replay Animation
+        </button>
+        <button class="btn" id="spawnFromReplayBtn">Spawn Result on Canvas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Periodic Table Drawer -->
+  <div class="pt-drawer" id="ptDrawer">
+    <div class="pt-sheet">
+      <div class="pt-header">
+        <div class="pt-title-group">
+          <h2 class="pt-title">Periodic Table of Elements</h2>
+          <span style="font-size: 11px; color: var(--text-muted);">Tap any element to add to canvas</span>
+        </div>
+        <div class="pt-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-alkali)"></span>Alkali</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-alkaline)"></span>Alkaline</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-transition)"></span>Transition</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-post-transition)"></span>Post-Trans.</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-metalloid)"></span>Metalloid</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-nonmetal)"></span>Non-metal</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-halogen)"></span>Halogen</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--cat-noble)"></span>Noble Gas</div>
+        </div>
+        <button class="btn" id="closePtBtn">Close</button>
+      </div>
+      <div class="pt-scroll">
+        <div class="pt-grid" id="ptGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * 1. CHEMICAL DATABASE (Elements, Oxides, Acids, Bases, Salts & Ions)
+     *************************************************************************/
+    const CHEMICALS = {
+      // --- STARTER ELEMENTS ---
+      H:   { id: 'H',   formula: 'H',   name: 'Hydrogen Atom',   kind: 'element', state: 'g', possibleStates: ['g', 'l', 's'], color: '#93c5fd', appearance: 'Colorless gas', mass: '1.008 g/mol', nature: 'Reactive radical', tags: ['Flammable', 'Gas'], fx: 'bubble', eq: 'Elemental Hydrogen (Z = 1)', desc: 'Lightest element; condenses to liquid H₂ at 20 K or solid phase under high pressure.' },
+      O:   { id: 'O',   formula: 'O',   name: 'Oxygen Atom',     kind: 'element', state: 'g', possibleStates: ['g', 'l', 's'], color: '#60a5fa', appearance: 'Pale blue fluid', mass: '15.999 g/mol', nature: 'Oxidizer', tags: ['Oxidizer', 'Gas'], fx: 'bubble', eq: 'Elemental Oxygen (Z = 8)', desc: 'Electronegative non-metal; liquefies at 90.2 K into pale-blue liquid oxygen.' },
+      C:   { id: 'C',   formula: 'C',   name: 'Carbon',          kind: 'element', state: 's', possibleStates: ['s', 'g'], color: '#475569', appearance: 'Black graphite solid', mass: '12.011 g/mol', nature: 'Neutral non-metal', tags: ['Flammable'], fx: 'none', eq: 'Elemental Carbon (Z = 6)', desc: 'Sublimes from solid graphite to carbon vapor around 3915 K.' },
+      N:   { id: 'N',   formula: 'N',   name: 'Nitrogen Atom',   kind: 'element', state: 'g', possibleStates: ['g', 'l', 's'], color: '#818cf8', appearance: 'Colorless fluid', mass: '14.007 g/mol', nature: 'Neutral non-metal', tags: ['Gas'], fx: 'bubble', eq: 'Elemental Nitrogen (Z = 7)', desc: 'Liquefies at 77 K and freezes at 63 K.' },
+      Na:  { id: 'Na',  formula: 'Na',  name: 'Sodium',          kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Soft silvery metal', mass: '22.990 g/mol', nature: 'Alkali metal', tags: ['Reactive', 'Flammable'], fx: 'none', eq: 'Elemental Sodium (Z = 11)', desc: 'Soft alkali metal that melts at 97.8 °C and forms strong bases and complex salts.' },
+      Cl:  { id: 'Cl',  formula: 'Cl',  name: 'Chlorine Atom',   kind: 'element', state: 'g', possibleStates: ['g', 'l', 's'], color: '#a3e635', appearance: 'Yellow-green gas', mass: '35.45 g/mol', nature: 'Halogen oxidizer', tags: ['Toxic', 'Corrosive'], fx: 'bubble', eq: 'Elemental Chlorine (Z = 17)', desc: 'Condenses into an amber-yellow liquid at -34 °C.' },
+      Fe:  { id: 'Fe',  formula: 'Fe',  name: 'Iron',            kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#94a3b8', appearance: 'Lustrous grey metal', mass: '55.845 g/mol', nature: 'Transition metal', tags: ['Neutral'], fx: 'none', eq: 'Elemental Iron (Z = 26)', desc: 'Melts at 1538 °C; displaces less reactive metals like Cu from CuSO₄.' },
+      Cu:  { id: 'Cu',  formula: 'Cu',  name: 'Copper',          kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#d97706', appearance: 'Reddish-orange metal', mass: '63.546 g/mol', nature: 'Transition metal', tags: ['Neutral'], fx: 'none', eq: 'Elemental Copper (Z = 29)', desc: 'Melts at 1085 °C; displaced by more reactive metals like Fe or Zn.' },
+      S:   { id: 'S',   formula: 'S',   name: 'Sulfur',          kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#eab308', appearance: 'Yellow crystalline solid', mass: '32.06 g/mol', nature: 'Non-metal', tags: ['Flammable'], fx: 'none', eq: 'Elemental Sulfur (Z = 16)', desc: 'Melts at 115 °C into yellow liquid sulfur.' },
+      Ca:  { id: 'Ca',  formula: 'Ca',  name: 'Calcium',         kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#e2e8f0', appearance: 'Silvery-white metal', mass: '40.078 g/mol', nature: 'Alkaline earth metal', tags: ['Reactive'], fx: 'none', eq: 'Elemental Calcium (Z = 20)', desc: 'Melts at 842 °C; alkaline earth metal.' },
+      Mg:  { id: 'Mg',  formula: 'Mg',  name: 'Magnesium',       kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Silvery ribbon', mass: '24.305 g/mol', nature: 'Alkaline earth metal', tags: ['Flammable'], fx: 'none', eq: 'Elemental Magnesium (Z = 12)', desc: 'Reactive alkaline earth metal above H, Fe, Cu, and Zn in reactivity.' },
+      Zn:  { id: 'Zn',  formula: 'Zn',  name: 'Zinc',            kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#94a3b8', appearance: 'Bluish-silver metal', mass: '65.38 g/mol', nature: 'Amphoteric metal', tags: ['Amphoteric'], fx: 'none', eq: 'Elemental Zinc (Z = 30)', desc: 'Amphoteric metal; reacts with NaOH to give sodium zincate + H₂, and displaces Cu from CuSO₄.' },
+
+      // --- ADDITIONAL PERIODIC TABLE ELEMENTS ---
+      He:  { id: 'He',  formula: 'He',  name: 'Helium',          kind: 'element', state: 'g', possibleStates: ['g', 'l'], color: '#d8b4fe', appearance: 'Colorless noble gas', mass: '4.0026 g/mol', nature: 'Inert noble gas', tags: ['Inert', 'Gas'], fx: 'bubble', eq: 'Elemental Helium (Z = 2)', desc: 'Inert noble gas.' },
+      Li:  { id: 'Li',  formula: 'Li',  name: 'Lithium',         kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Silvery-white metal', mass: '6.94 g/mol', nature: 'Alkali metal', tags: ['Reactive'], fx: 'none', eq: 'Elemental Lithium (Z = 3)', desc: 'Lightest solid alkali metal.' },
+      K:   { id: 'K',   formula: 'K',   name: 'Potassium',       kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Soft silvery metal', mass: '39.098 g/mol', nature: 'Alkali metal', tags: ['Reactive'], fx: 'none', eq: 'Elemental Potassium (Z = 19)', desc: 'Highly reactive alkali metal.' },
+      Al:  { id: 'Al',  formula: 'Al',  name: 'Aluminum',        kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Silvery-white metal', mass: '26.982 g/mol', nature: 'Amphoteric metal', tags: ['Amphoteric'], fx: 'none', eq: 'Elemental Aluminum (Z = 13)', desc: 'Amphoteric post-transition metal.' },
+      Ag:  { id: 'Ag',  formula: 'Ag',  name: 'Silver',          kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#e2e8f0', appearance: 'Lustrous white metal', mass: '107.87 g/mol', nature: 'Noble transition metal', tags: ['Neutral'], fx: 'none', eq: 'Elemental Silver (Z = 47)', desc: 'Low-reactivity noble metal displaced by Cu, Fe, or Zn.' },
+      Au:  { id: 'Au',  formula: 'Au',  name: 'Gold',            kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#eab308', appearance: 'Metallic yellow solid', mass: '196.97 g/mol', nature: 'Noble metal', tags: ['Inert'], fx: 'none', eq: 'Elemental Gold (Z = 79)', desc: 'Unreactive noble metal.' },
+      Hg:  { id: 'Hg',  formula: 'Hg',  name: 'Mercury',         kind: 'element', state: 'l', possibleStates: ['s', 'l', 'g'], color: '#cbd5e1', appearance: 'Dense silvery liquid', mass: '200.59 g/mol', nature: 'Transition metal', tags: ['Toxic'], fx: 'none', eq: 'Elemental Mercury (Z = 80)', desc: 'Liquid transition metal.' },
+      Br:  { id: 'Br',  formula: 'Br₂', name: 'Bromine',         kind: 'element', state: 'l', possibleStates: ['s', 'l', 'g'], color: '#991b1b', appearance: 'Red-brown liquid', mass: '159.81 g/mol', nature: 'Halogen oxidizer', tags: ['Corrosive', 'Toxic'], fx: 'bubble', eq: 'Elemental Bromine (Z = 35)', desc: 'Red-brown halogen.' },
+      I:   { id: 'I',   formula: 'I₂',  name: 'Iodine',          kind: 'element', state: 's', possibleStates: ['s', 'l', 'g'], color: '#581c87', appearance: 'Violet-black crystals', mass: '253.81 g/mol', nature: 'Halogen', tags: ['Toxic'], fx: 'none', eq: 'Elemental Iodine (Z = 53)', desc: 'Violet-black halogen.' },
+
+      // --- DIATOMIC & MOLECULAR COMPOUNDS ---
+      H2:      { id: 'H2',      formula: 'H₂',      name: 'Hydrogen Gas',        kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#93c5fd', appearance: 'Colorless gas', mass: '2.016 g/mol', nature: 'Neutral gas', tags: ['Flammable', 'Gas'], fx: 'bubble', eq: 'H + H → H₂', desc: 'Diatomic hydrogen gas.' },
+      O2:      { id: 'O2',      formula: 'O₂',      name: 'Oxygen Gas',          kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#60a5fa', appearance: 'Colorless gas', mass: '31.998 g/mol', nature: 'Oxidizer', tags: ['Oxidizer', 'Gas'], fx: 'bubble', eq: 'O + O → O₂', desc: 'Diatomic dioxygen gas.' },
+      N2:      { id: 'N2',      formula: 'N₂',      name: 'Nitrogen Gas',        kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#818cf8', appearance: 'Colorless gas', mass: '28.014 g/mol', nature: 'Neutral gas', tags: ['Gas', 'Neutral'], fx: 'bubble', eq: 'N + N → N₂', desc: 'Diatomic nitrogen gas.' },
+      Cl2:     { id: 'Cl2',     formula: 'Cl₂',     name: 'Chlorine Gas',        kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#a3e635', appearance: 'Pale yellow-green gas', mass: '70.90 g/mol', nature: 'Oxidizer', tags: ['Toxic', 'Corrosive'], fx: 'bubble', eq: 'Cl + Cl → Cl₂', desc: 'Diatomic chlorine gas.' },
+      H2O:     { id: 'H2O',     formula: 'H₂O',     name: 'Water / Ice / Steam', kind: 'compound', state: 'l', possibleStates: ['s', 'l', 'g'], color: '#38bdf8', appearance: 'Clear liquid / Ice / Steam', mass: '18.015 g/mol', nature: 'Neutral (pH 7.0)', tags: ['Neutral'], fx: 'none', eq: '2H₂ + O₂ → 2H₂O', desc: 'Water (l), ice (s), or steam (g).' },
+      H2O2:    { id: 'H2O2',    formula: 'H₂O₂',    name: 'Hydrogen Peroxide',   kind: 'compound', state: 'l', possibleStates: ['s', 'l'], color: '#bae6fd', appearance: 'Pale blue liquid', mass: '34.014 g/mol', nature: 'Weak acid / Oxidizer', tags: ['Oxidizer'], fx: 'bubble', eq: 'H₂O + O → H₂O₂', desc: 'Hydrogen peroxide.' },
+      CO:      { id: 'CO',      formula: 'CO',      name: 'Carbon Monoxide',     kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#94a3b8', appearance: 'Colorless gas', mass: '28.010 g/mol', nature: 'Neutral gas', tags: ['Toxic', 'Flammable'], fx: 'bubble', eq: '2C + O₂ → 2CO', desc: 'Carbon monoxide gas.' },
+      CO2:     { id: 'CO2',     formula: 'CO₂',     name: 'Carbon Dioxide / Dry Ice', kind: 'compound', state: 'g', possibleStates: ['s', 'g'], color: '#cbd5e1', appearance: 'Colorless gas / Dry ice', mass: '44.009 g/mol', nature: 'Acidic oxide', tags: ['Gas', 'Neutral'], fx: 'bubble', eq: 'C + O₂ → CO₂', desc: 'Carbon dioxide gas or dry ice.' },
+      SO2:     { id: 'SO2',     formula: 'SO₂',     name: 'Sulfur Dioxide',      kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#fde047', appearance: 'Colorless pungent gas', mass: '64.066 g/mol', nature: 'Acidic oxide', tags: ['Toxic', 'Gas'], fx: 'bubble', eq: 'S + O₂ → SO₂', desc: 'Sulfur dioxide gas.' },
+      SO3:     { id: 'SO3',     formula: 'SO₃',     name: 'Sulfur Trioxide',     kind: 'compound', state: 'g', possibleStates: ['s', 'l', 'g'], color: '#facc15', appearance: 'Fuming gas / Solid', mass: '80.063 g/mol', nature: 'Acidic anhydride', tags: ['Corrosive'], fx: 'none', eq: '2SO₂ + O₂ → 2SO₃', desc: 'Sulfur trioxide.' },
+      NH3:     { id: 'NH3',     formula: 'NH₃',     name: 'Ammonia',             kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#93c5fd', appearance: 'Colorless pungent gas', mass: '17.031 g/mol', nature: 'Basic (pH ~11.6)', tags: ['Toxic', 'Basic'], fx: 'bubble', eq: 'N₂ + 3H₂ → 2NH₃', desc: 'Ammonia gas.' },
+      CH4:     { id: 'CH4',     formula: 'CH₄',     name: 'Methane',             kind: 'compound', state: 'g', possibleStates: ['g', 'l', 's'], color: '#6ee7b7', appearance: 'Colorless gas', mass: '16.043 g/mol', nature: 'Hydrocarbon', tags: ['Flammable', 'Gas'], fx: 'bubble', eq: 'C + 2H₂ → CH₄', desc: 'Methane gas.' },
+
+      // --- ACIDS, BASES, SALTS & COMPLEX COMPOUNDS ---
+      HCl:     { id: 'HCl',     formula: 'HCl',     name: 'Hydrochloric Acid',   kind: 'compound', state: 'aq', possibleStates: ['aq', 'g', 'l'], color: '#bef264', appearance: 'Clear aqueous acid', mass: '36.46 g/mol', nature: 'Strong Acid (pH ~1)', tags: ['Corrosive', 'Acidic'], fx: 'none', eq: 'H₂ + Cl₂ → 2HCl', desc: 'Hydrochloric acid; reacts with CuO to form CuCl₂ + H₂O.' },
+      H2SO4:   { id: 'H2SO4',   formula: 'H₂SO₄',   name: 'Sulfuric Acid',       kind: 'compound', state: 'l', possibleStates: ['l', 's', 'aq'], color: '#fef08a', appearance: 'Oily colorless liquid', mass: '98.079 g/mol', nature: 'Strong Diprotic Acid', tags: ['Corrosive', 'Acidic'], fx: 'none', eq: 'SO₃ + H₂O → H₂SO₄', desc: 'Strong diprotic acid.' },
+      H2CO3:   { id: 'H2CO3',   formula: 'H₂CO₃',   name: 'Carbonic Acid',       kind: 'compound', state: 'aq', possibleStates: ['aq'], color: '#bae6fd', appearance: 'Colorless aqueous solution', mass: '62.024 g/mol', nature: 'Weak Acid (pH ~4.5)', tags: ['Acidic'], fx: 'bubble', eq: 'CO₂ + H₂O ⇌ H₂CO₃', desc: 'Carbonic acid.' },
+      NaOH:    { id: 'NaOH',    formula: 'NaOH',    name: 'Sodium Hydroxide',    kind: 'compound', state: 'aq', possibleStates: ['s', 'l', 'aq'], color: '#60a5fa', appearance: 'White pellets / Clear alkali', mass: '39.997 g/mol', nature: 'Strong Base (pH ~14)', tags: ['Corrosive', 'Basic'], fx: 'none', eq: '2Na + 2H₂O → 2NaOH + H₂', desc: 'Strong base.' },
+      NaOH_2X: { id: 'NaOH_2X', formula: '2NaOH',   name: 'Concentrated NaOH (2×)', kind: 'compound', state: 'aq', possibleStates: ['s', 'l', 'aq'], color: '#3b82f6', appearance: 'Concentrated caustic alkali', mass: '79.994 g/mol', nature: 'Concentrated Strong Base', tags: ['Corrosive', 'Basic'], fx: 'none', eq: 'NaOH + NaOH → 2NaOH', desc: 'Double unit of NaOH.' },
+      KOH:     { id: 'KOH',     formula: 'KOH',     name: 'Potassium Hydroxide', kind: 'compound', state: 'aq', possibleStates: ['s', 'l', 'aq'], color: '#60a5fa', appearance: 'White flakes / Clear alkali', mass: '56.106 g/mol', nature: 'Strong Base (pH ~14)', tags: ['Corrosive', 'Basic'], fx: 'none', eq: '2K + 2H₂O → 2KOH + H₂', desc: 'Strong base.' },
+      NH4OH:   { id: 'NH4OH',   formula: 'NH₄OH',   name: 'Ammonium Hydroxide',  kind: 'compound', state: 'aq', possibleStates: ['aq'], color: '#93c5fd', appearance: 'Clear alkaline solution', mass: '35.046 g/mol', nature: 'Weak Base (pH ~11.5)', tags: ['Basic'], fx: 'none', eq: 'NH₃ + H₂O ⇌ NH₄OH', desc: 'Ammonium hydroxide.' },
+      CaO:     { id: 'CaO',     formula: 'CaO',     name: 'Calcium Oxide',       kind: 'compound', state: 's', possibleStates: ['s', 'l'], color: '#f8fafc', appearance: 'White powder (Quicklime)', mass: '56.077 g/mol', nature: 'Basic Oxide', tags: ['Corrosive', 'Basic'], fx: 'none', eq: 'CaCO₃ → CaO + CO₂', desc: 'Quicklime solid.' },
+      CaOH2:   { id: 'CaOH2',   formula: 'Ca(OH)₂', name: 'Calcium Hydroxide',   kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#e2e8f0', appearance: 'Limewater / Slaked lime', mass: '74.093 g/mol', nature: 'Strong Base (pH 12.4)', tags: ['Basic'], fx: 'none', eq: 'CaO + H₂O → Ca(OH)₂', desc: 'Slaked lime / limewater.' },
+      MgO:     { id: 'MgO',     formula: 'MgO',     name: 'Magnesium Oxide',     kind: 'compound', state: 's', possibleStates: ['s', 'l'], color: '#f8fafc', appearance: 'White refractory ash', mass: '40.304 g/mol', nature: 'Basic Oxide', tags: ['Basic'], fx: 'none', eq: '2Mg + O₂ → 2MgO', desc: 'Magnesium oxide.' },
+      Fe2O3:   { id: 'Fe2O3',   formula: 'Fe₂O₃',   name: 'Iron(III) Oxide',     kind: 'compound', state: 's', possibleStates: ['s'], color: '#b45309', appearance: 'Reddish-brown rust', mass: '159.69 g/mol', nature: 'Basic Oxide', tags: ['Neutral'], fx: 'none', eq: '4Fe + 3O₂ → 2Fe₂O₃', desc: 'Ferric oxide.' },
+      CuO:     { id: 'CuO',     formula: 'CuO',     name: 'Copper(II) Oxide',    kind: 'compound', state: 's', possibleStates: ['s', 'l'], color: '#334155', appearance: 'Black solid powder', mass: '79.545 g/mol', nature: 'Basic Oxide', tags: ['Neutral'], fx: 'none', eq: '2Cu + O₂ → 2CuO', desc: 'Black copper(II) oxide; reacts with HCl to give CuCl₂ + H₂O.' },
+      Na2O:    { id: 'Na2O',    formula: 'Na₂O',    name: 'Sodium Oxide',        kind: 'compound', state: 's', possibleStates: ['s'], color: '#f8fafc', appearance: 'White solid', mass: '61.98 g/mol', nature: 'Basic Oxide', tags: ['Corrosive', 'Basic'], fx: 'none', eq: '4Na + O₂ → 2Na₂O', desc: 'Sodium oxide.' },
+      Na2O2:   { id: 'Na2O2',   formula: 'Na₂O₂',   name: 'Sodium Peroxide',     kind: 'compound', state: 's', possibleStates: ['s'], color: '#fef08a', appearance: 'Pale yellow solid', mass: '77.98 g/mol', nature: 'Oxidizing Peroxide', tags: ['Oxidizer', 'Basic'], fx: 'none', eq: '2Na + O₂ → Na₂O₂', desc: 'Sodium peroxide.' },
+      Na2ZnO2: { id: 'Na2ZnO2', formula: 'Na₂ZnO₂', name: 'Sodium Zincate',      kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#e2e8f0', appearance: 'Colorless complex salt', mass: '143.35 g/mol', nature: 'Complex Zincate Salt', tags: ['Complex Salt', 'Basic'], fx: 'none', eq: 'Zn + 2NaOH → Na₂ZnO₂ + H₂↑', desc: 'Sodium zincate complex salt.' },
+      NaAlO2:  { id: 'NaAlO2',  formula: 'NaAlO₂',  name: 'Sodium Aluminate',    kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#e2e8f0', appearance: 'White/colorless aluminate', mass: '81.97 g/mol', nature: 'Complex Aluminate Salt', tags: ['Complex Salt', 'Basic'], fx: 'none', eq: '2Al + 2NaOH + 2H₂O → 2NaAlO₂ + 3H₂↑', desc: 'Sodium aluminate complex salt.' },
+      NaCl:    { id: 'NaCl',    formula: 'NaCl',    name: 'Sodium Chloride',     kind: 'compound', state: 's', possibleStates: ['s', 'l', 'aq'], color: '#f8fafc', appearance: 'White crystals / Brine', mass: '58.44 g/mol', nature: 'Neutral Salt (pH 7.0)', tags: ['Neutral'], fx: 'none', eq: 'HCl + NaOH → NaCl + H₂O', desc: 'Sodium chloride.' },
+      KCl:     { id: 'KCl',     formula: 'KCl',     name: 'Potassium Chloride',  kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#f8fafc', appearance: 'White crystalline salt', mass: '74.55 g/mol', nature: 'Neutral Salt (pH 7.0)', tags: ['Neutral'], fx: 'none', eq: 'HCl + KOH → KCl + H₂O', desc: 'Potassium chloride salt.' },
+      K2SO4:   { id: 'K2SO4',   formula: 'K₂SO₄',   name: 'Potassium Sulfate',   kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#f8fafc', appearance: 'White crystalline solid', mass: '174.26 g/mol', nature: 'Neutral Salt', tags: ['Neutral'], fx: 'none', eq: '2KOH + H₂SO₄ → K₂SO₄ + 2H₂O', desc: 'Potassium sulfate salt.' },
+      Na2SO4:  { id: 'Na2SO4',  formula: 'Na₂SO₄',  name: 'Sodium Sulfate',      kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#f8fafc', appearance: 'White crystalline solid', mass: '142.04 g/mol', nature: 'Neutral Salt', tags: ['Neutral'], fx: 'none', eq: '2NaOH + H₂SO₄ → Na₂SO₄ + 2H₂O', desc: 'Sodium sulfate salt.' },
+      CaSO4:   { id: 'CaSO4',   formula: 'CaSO₄',   name: 'Calcium Sulfate',     kind: 'compound', state: 's', possibleStates: ['s', 'aq'], color: '#f8fafc', appearance: 'White solid precipitate', mass: '136.14 g/mol', nature: 'Slightly Soluble Salt', tags: ['Precipitate'], fx: 'precipitate', eq: 'CaCl₂ + Na₂SO₄ → CaSO₄↓ + 2NaCl', desc: 'White calcium sulfate precipitate.' },
+      CaCO3:   { id: 'CaCO3',   formula: 'CaCO₃',   name: 'Calcium Carbonate',   kind: 'compound', state: 's', possibleStates: ['s'], color: '#f1f5f9', appearance: 'White chalky precipitate', mass: '100.09 g/mol', nature: 'Basic Salt', tags: ['Precipitate'], fx: 'precipitate', eq: 'Ca(OH)₂ + CO₂ → CaCO₃↓ + H₂O', desc: 'White calcium carbonate precipitate.' },
+      CaHCO3_2:{ id: 'CaHCO3_2',formula: 'Ca(HCO₃)₂',name: 'Calcium Bicarbonate', kind: 'compound', state: 'aq', possibleStates: ['aq'], color: '#bae6fd', appearance: 'Clear hard-water solution', mass: '162.11 g/mol', nature: 'Soluble Bicarbonate', tags: ['Neutral'], fx: 'none', eq: 'CaCO₃ + H₂O + CO₂ → Ca(HCO₃)₂', desc: 'Soluble calcium bicarbonate.' },
+      CaCl2:   { id: 'CaCl2',   formula: 'CaCl₂',   name: 'Calcium Chloride',    kind: 'compound', state: 's', possibleStates: ['s', 'l', 'aq'], color: '#f8fafc', appearance: 'White granules / Aqueous', mass: '110.98 g/mol', nature: 'Neutral Salt', tags: ['Neutral'], fx: 'bubble', eq: 'CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂', desc: 'Calcium chloride salt.' },
+      CuCl2:   { id: 'CuCl2',   formula: 'CuCl₂',   name: 'Copper(II) Chloride', kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#06b6d4', appearance: 'Bluish-green solution / Brown-yellow solid', mass: '134.45 g/mol', nature: 'Acidic Salt', tags: ['Corrosive', 'Toxic'], fx: 'none', eq: 'CuO + 2HCl → CuCl₂ + H₂O', desc: 'Formed when black copper(II) oxide dissolves in hydrochloric acid, turning solution bluish-green.' },
+      CuSO4:   { id: 'CuSO4',   formula: 'CuSO₄',   name: 'Copper(II) Sulfate',  kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#2563eb', appearance: 'Blue solution / White solid', mass: '159.61 g/mol', nature: 'Acidic Salt (pH ~4)', tags: ['Toxic'], fx: 'none', eq: 'CuO + H₂SO₄ → CuSO₄ + H₂O', desc: 'Blue copper(II) sulfate.' },
+      FeSO4:   { id: 'FeSO4',   formula: 'FeSO₄',   name: 'Iron(II) Sulfate',    kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#34d399', appearance: 'Pale green solution', mass: '151.91 g/mol', nature: 'Acidic Salt', tags: ['Neutral'], fx: 'none', eq: 'Fe + CuSO₄ → FeSO₄ + Cu', desc: 'Pale green iron(II) sulfate.' },
+      FeCl2:   { id: 'FeCl2',   formula: 'FeCl₂',   name: 'Iron(II) Chloride',   kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#4ade80', appearance: 'Pale green solution', mass: '126.75 g/mol', nature: 'Acidic Salt', tags: ['Neutral'], fx: 'bubble', eq: 'Fe + 2HCl → FeCl₂ + H₂↑', desc: 'Ferrous chloride.' },
+      ZnSO4:   { id: 'ZnSO4',   formula: 'ZnSO₄',   name: 'Zinc Sulfate',        kind: 'compound', state: 'aq', possibleStates: ['s', 'aq'], color: '#e2e8f0', appearance: 'White crystals / Clear solution', mass: '161.47 g/mol', nature: 'Acidic Salt', tags: ['Neutral'], fx: 'bubble', eq: 'Zn + H₂SO₄ → ZnSO₄ + H₂↑', desc: 'Zinc sulfate salt.' },
+      ZnCl2:   { id: 'ZnCl2',   formula: 'ZnCl₂',   name: 'Zinc Chloride',       kind: 'compound', state: 'aq', possibleStates: ['s', 'l', 'aq'], color: '#e2e8f0', appearance: 'White solid / Aqueous', mass: '136.29 g/mol', nature: 'Acidic Salt', tags: ['Corrosive'], fx: 'bubble', eq: 'Zn + 2HCl → ZnCl₂ + H₂↑', desc: 'Zinc chloride salt.' },
+      NH4Cl:   { id: 'NH4Cl',   formula: 'NH₄Cl',   name: 'Ammonium Chloride',   kind: 'compound', state: 's', possibleStates: ['s', 'aq'], color: '#f8fafc', appearance: 'White crystalline solid', mass: '53.49 g/mol', nature: 'Acidic Salt (pH ~5)', tags: ['Precipitate'], fx: 'precipitate', eq: 'NH₃ + HCl → NH₄Cl', desc: 'Ammonium chloride salt.' },
+      CuOH2:   { id: 'CuOH2',   formula: 'Cu(OH)₂', name: 'Copper(II) Hydroxide',kind: 'compound', state: 's', possibleStates: ['s'], color: '#0284c7', appearance: 'Pale blue precipitate', mass: '97.56 g/mol', nature: 'Weak Base', tags: ['Precipitate'], fx: 'precipitate', eq: 'CuSO₄ + 2NaOH → Cu(OH)₂↓', desc: 'Pale blue copper(II) hydroxide precipitate.' },
+      FeOH3:   { id: 'FeOH3',   formula: 'Fe(OH)₃', name: 'Iron(III) Hydroxide', kind: 'compound', state: 's', possibleStates: ['s'], color: '#9a3412', appearance: 'Rust-brown precipitate', mass: '106.87 g/mol', nature: 'Weak Base', tags: ['Precipitate'], fx: 'precipitate', eq: 'Fe₂O₃ + 3H₂O → 2Fe(OH)₃', desc: 'Rust-brown iron(III) hydroxide precipitate.' },
+      ZnOH2:   { id: 'ZnOH2',   formula: 'Zn(OH)₂', name: 'Zinc Hydroxide',      kind: 'compound', state: 's', possibleStates: ['s'], color: '#f8fafc', appearance: 'White gelatinous precipitate', mass: '99.40 g/mol', nature: 'Amphoteric Hydroxide', tags: ['Precipitate', 'Amphoteric'], fx: 'precipitate', eq: 'ZnSO₄ + 2NaOH → Zn(OH)₂↓ + Na₂SO₄', desc: 'White zinc hydroxide precipitate.' },
+      AgCl:    { id: 'AgCl',    formula: 'AgCl',    name: 'Silver Chloride',     kind: 'compound', state: 's', possibleStates: ['s', 'l'], color: '#f8fafc', appearance: 'Curdy white precipitate', mass: '143.32 g/mol', nature: 'Insoluble Salt', tags: ['Precipitate'], fx: 'precipitate', eq: 'Ag + HCl → AgCl↓', desc: 'Curdy white silver chloride precipitate.' },
+      Ag2SO4:  { id: 'Ag2SO4',  formula: 'Ag₂SO₄',  name: 'Silver Sulfate',      kind: 'compound', state: 's', possibleStates: ['s', 'aq'], color: '#e2e8f0', appearance: 'White crystalline solid', mass: '311.80 g/mol', nature: 'Slightly Soluble Salt', tags: ['Precipitate'], fx: 'precipitate', eq: '2Ag + H₂SO₄ → Ag₂SO₄↓ + H₂', desc: 'Silver sulfate salt.' }
+    };
+
+    /*************************************************************************
+     * 2. PERIODIC TABLE DATA
+     *************************************************************************/
+    const PERIODIC_ELEMENTS = [
+      { z: 1, sym: 'H', name: 'Hydrogen', cat: 'nonmetal', r: 1, c: 1 },
+      { z: 2, sym: 'He', name: 'Helium', cat: 'noble', r: 1, c: 18 },
+      { z: 3, sym: 'Li', name: 'Lithium', cat: 'alkali', r: 2, c: 1 },
+      { z: 4, sym: 'Be', name: 'Beryllium', cat: 'alkaline', r: 2, c: 2 },
+      { z: 5, sym: 'B', name: 'Boron', cat: 'metalloid', r: 2, c: 13 },
+      { z: 6, sym: 'C', name: 'Carbon', cat: 'nonmetal', r: 2, c: 14 },
+      { z: 7, sym: 'N', name: 'Nitrogen', cat: 'nonmetal', r: 2, c: 15 },
+      { z: 8, sym: 'O', name: 'Oxygen', cat: 'nonmetal', r: 2, c: 16 },
+      { z: 9, sym: 'F', name: 'Fluorine', cat: 'halogen', r: 2, c: 17 },
+      { z: 10, sym: 'Ne', name: 'Neon', cat: 'noble', r: 2, c: 18 },
+      { z: 11, sym: 'Na', name: 'Sodium', cat: 'alkali', r: 3, c: 1 },
+      { z: 12, sym: 'Mg', name: 'Magnesium', cat: 'alkaline', r: 3, c: 2 },
+      { z: 13, sym: 'Al', name: 'Aluminum', cat: 'post-transition', r: 3, c: 13 },
+      { z: 14, sym: 'Si', name: 'Silicon', cat: 'metalloid', r: 3, c: 14 },
+      { z: 15, sym: 'P', name: 'Phosphorus', cat: 'nonmetal', r: 3, c: 15 },
+      { z: 16, sym: 'S', name: 'Sulfur', cat: 'nonmetal', r: 3, c: 16 },
+      { z: 17, sym: 'Cl', name: 'Chlorine', cat: 'halogen', r: 3, c: 17 },
+      { z: 18, sym: 'Ar', name: 'Argon', cat: 'noble', r: 3, c: 18 },
+      { z: 19, sym: 'K', name: 'Potassium', cat: 'alkali', r: 4, c: 1 },
+      { z: 20, sym: 'Ca', name: 'Calcium', cat: 'alkaline', r: 4, c: 2 },
+      { z: 21, sym: 'Sc', name: 'Scandium', cat: 'transition', r: 4, c: 3 },
+      { z: 22, sym: 'Ti', name: 'Titanium', cat: 'transition', r: 4, c: 4 },
+      { z: 23, sym: 'V', name: 'Vanadium', cat: 'transition', r: 4, c: 5 },
+      { z: 24, sym: 'Cr', name: 'Chromium', cat: 'transition', r: 4, c: 6 },
+      { z: 25, sym: 'Mn', name: 'Manganese', cat: 'transition', r: 4, c: 7 },
+      { z: 26, sym: 'Fe', name: 'Iron', cat: 'transition', r: 4, c: 8 },
+      { z: 27, sym: 'Co', name: 'Cobalt', cat: 'transition', r: 4, c: 9 },
+      { z: 28, sym: 'Ni', name: 'Nickel', cat: 'transition', r: 4, c: 10 },
+      { z: 29, sym: 'Cu', name: 'Copper', cat: 'transition', r: 4, c: 11 },
+      { z: 30, sym: 'Zn', name: 'Zinc', cat: 'transition', r: 4, c: 12 },
+      { z: 31, sym: 'Ga', name: 'Gallium', cat: 'post-transition', r: 4, c: 13 },
+      { z: 32, sym: 'Ge', name: 'Germanium', cat: 'metalloid', r: 4, c: 14 },
+      { z: 33, sym: 'As', name: 'Arsenic', cat: 'metalloid', r: 4, c: 15 },
+      { z: 34, sym: 'Se', name: 'Selenium', cat: 'nonmetal', r: 4, c: 16 },
+      { z: 35, sym: 'Br', name: 'Bromine', cat: 'halogen', r: 4, c: 17 },
+      { z: 36, sym: 'Kr', name: 'Krypton', cat: 'noble', r: 4, c: 18 },
+      { z: 37, sym: 'Rb', name: 'Rubidium', cat: 'alkali', r: 5, c: 1 },
+      { z: 38, sym: 'Sr', name: 'Strontium', cat: 'alkaline', r: 5, c: 2 },
+      { z: 39, sym: 'Y', name: 'Yttrium', cat: 'transition', r: 5, c: 3 },
+      { z: 40, sym: 'Zr', name: 'Zirconium', cat: 'transition', r: 5, c: 4 },
+      { z: 41, sym: 'Nb', name: 'Niobium', cat: 'transition', r: 5, c: 5 },
+      { z: 42, sym: 'Mo', name: 'Molybdenum', cat: 'transition', r: 5, c: 6 },
+      { z: 43, sym: 'Tc', name: 'Technetium', cat: 'transition', r: 5, c: 7 },
+      { z: 44, sym: 'Ru', name: 'Ruthenium', cat: 'transition', r: 5, c: 8 },
+      { z: 45, sym: 'Rh', name: 'Rhodium', cat: 'transition', r: 5, c: 9 },
+      { z: 46, sym: 'Pd', name: 'Palladium', cat: 'transition', r: 5, c: 10 },
+      { z: 47, sym: 'Ag', name: 'Silver', cat: 'transition', r: 5, c: 11 },
+      { z: 48, sym: 'Cd', name: 'Cadmium', cat: 'transition', r: 5, c: 12 },
+      { z: 49, sym: 'In', name: 'Indium', cat: 'post-transition', r: 5, c: 13 },
+      { z: 50, sym: 'Sn', name: 'Tin', cat: 'post-transition', r: 5, c: 14 },
+      { z: 51, sym: 'Sb', name: 'Antimony', cat: 'metalloid', r: 5, c: 15 },
+      { z: 52, sym: 'Te', name: 'Tellurium', cat: 'metalloid', r: 5, c: 16 },
+      { z: 53, sym: 'I', name: 'Iodine', cat: 'halogen', r: 5, c: 17 },
+      { z: 54, sym: 'Xe', name: 'Xenon', cat: 'noble', r: 5, c: 18 },
+      { z: 55, sym: 'Cs', name: 'Cesium', cat: 'alkali', r: 6, c: 1 },
+      { z: 56, sym: 'Ba', name: 'Barium', cat: 'alkaline', r: 6, c: 2 },
+      { z: 72, sym: 'Hf', name: 'Hafnium', cat: 'transition', r: 6, c: 4 },
+      { z: 73, sym: 'Ta', name: 'Tantalum', cat: 'transition', r: 6, c: 5 },
+      { z: 74, sym: 'W', name: 'Tungsten', cat: 'transition', r: 6, c: 6 },
+      { z: 75, sym: 'Re', name: 'Rhenium', cat: 'transition', r: 6, c: 7 },
+      { z: 76, sym: 'Os', name: 'Osmium', cat: 'transition', r: 6, c: 8 },
+      { z: 77, sym: 'Ir', name: 'Iridium', cat: 'transition', r: 6, c: 9 },
+      { z: 78, sym: 'Pt', name: 'Platinum', cat: 'transition', r: 6, c: 10 },
+      { z: 79, sym: 'Au', name: 'Gold', cat: 'transition', r: 6, c: 11 },
+      { z: 80, sym: 'Hg', name: 'Mercury', cat: 'transition', r: 6, c: 12 },
+      { z: 81, sym: 'Tl', name: 'Thallium', cat: 'post-transition', r: 6, c: 13 },
+      { z: 82, sym: 'Pb', name: 'Lead', cat: 'post-transition', r: 6, c: 14 },
+      { z: 83, sym: 'Bi', name: 'Bismuth', cat: 'post-transition', r: 6, c: 15 },
+      { z: 84, sym: 'Po', name: 'Polonium', cat: 'metalloid', r: 6, c: 16 },
+      { z: 85, sym: 'At', name: 'Astatine', cat: 'halogen', r: 6, c: 17 },
+      { z: 86, sym: 'Rn', name: 'Radon', cat: 'noble', r: 6, c: 18 },
+      { z: 87, sym: 'Fr', name: 'Francium', cat: 'alkali', r: 7, c: 1 },
+      { z: 88, sym: 'Ra', name: 'Radium', cat: 'alkaline', r: 7, c: 2 },
+      { z: 104, sym: 'Rf', name: 'Rutherfordium', cat: 'transition', r: 7, c: 4 },
+      { z: 105, sym: 'Db', name: 'Dubnium', cat: 'transition', r: 7, c: 5 },
+      { z: 106, sym: 'Sg', name: 'Seaborgium', cat: 'transition', r: 7, c: 6 },
+      { z: 107, sym: 'Bh', name: 'Bohrium', cat: 'transition', r: 7, c: 7 },
+      { z: 108, sym: 'Hs', name: 'Hassium', cat: 'transition', r: 7, c: 8 },
+      { z: 109, sym: 'Mt', name: 'Meitnerium', cat: 'transition', r: 7, c: 9 },
+      { z: 110, sym: 'Ds', name: 'Darmstadtium', cat: 'transition', r: 7, c: 10 },
+      { z: 111, sym: 'Rg', name: 'Roentgenium', cat: 'transition', r: 7, c: 11 },
+      { z: 112, sym: 'Cn', name: 'Copernicium', cat: 'transition', r: 7, c: 12 },
+      { z: 113, sym: 'Nh', name: 'Nihonium', cat: 'post-transition', r: 7, c: 13 },
+      { z: 114, sym: 'Fl', name: 'Flerovium', cat: 'post-transition', r: 7, c: 14 },
+      { z: 115, sym: 'Mc', name: 'Moscovium', cat: 'post-transition', r: 7, c: 15 },
+      { z: 116, sym: 'Lv', name: 'Livermorium', cat: 'post-transition', r: 7, c: 16 },
+      { z: 117, sym: 'Ts', name: 'Tennessine', cat: 'halogen', r: 7, c: 17 },
+      { z: 118, sym: 'Og', name: 'Oganesson', cat: 'noble', r: 7, c: 18 }
+    ];
+
+    PERIODIC_ELEMENTS.forEach(el => {
+      if (!CHEMICALS[el.sym]) {
+        const isGas = ['noble', 'halogen'].includes(el.cat) && !['Br', 'I', 'At'].includes(el.sym);
+        CHEMICALS[el.sym] = {
+          id: el.sym,
+          formula: el.sym,
+          name: el.name,
+          kind: 'element',
+          state: isGas ? 'g' : 's',
+          possibleStates: isGas ? ['g', 'l'] : ['s', 'l', 'g'],
+          color: el.cat === 'noble' ? '#a855f7' : el.cat === 'alkali' ? '#cbd5e1' : '#94a3b8',
+          appearance: isGas ? 'Colorless gas' : 'Metallic/crystalline solid',
+          mass: `${(el.z * 2.05).toFixed(2)} g/mol`,
+          nature: `${el.cat} element`,
+          tags: el.cat === 'noble' ? ['Inert', 'Gas'] : el.cat === 'alkali' ? ['Reactive'] : ['Neutral'],
+          fx: isGas ? 'bubble' : 'none',
+          eq: `Elemental ${el.name} (Z = ${el.z})`,
+          desc: `${el.name} (Atomic Number ${el.z}) from the ${el.cat} series.`
+        };
+      }
+    });
+
+    /*************************************************************************
+     * 3. REACTIONS + SINGLE & DOUBLE DISPLACEMENT ENGINES
+     *************************************************************************/
+    const PAIR_REACTIONS = [
+      // CuO + HCl -> CuCl2 + H2O
+      { a: 'CuO', b: 'HCl', cond: null, products: ['CuCl2', 'H2O'], msg: 'CuO + 2HCl → CuCl₂ + H₂O (Copper(II) Chloride)' },
+      { a: 'Fe2O3', b: 'HCl', cond: null, products: ['FeCl2', 'H2O'], msg: 'Fe₂O₃ + 6HCl → 2FeCl₃ + 3H₂O' },
+      { a: 'MgO', b: 'HCl', cond: null, products: ['MgCl2'], msg: 'MgO + 2HCl → MgCl₂ + H₂O' },
+
+      // Complex & Stoichiometric Reactions
+      { a: 'NaOH', b: 'NaOH', cond: null, products: ['NaOH_2X'], msg: 'NaOH + NaOH → 2NaOH (Concentrated NaOH)' },
+      { a: 'Zn', b: 'NaOH_2X', cond: null, products: ['Na2ZnO2', 'H2'], msg: 'Zn + 2NaOH → Na₂ZnO₂ + H₂↑ (Sodium Zincate)' },
+      { a: 'Zn', b: 'NaOH', cond: 'heat', products: ['Na2ZnO2', 'H2'], msg: 'Zn + 2NaOH —(Heat)→ Na₂ZnO₂ + H₂↑ (Sodium Zincate)' },
+      { a: 'Zn', b: 'NaOH', cond: null, products: ['Na2ZnO2', 'H2'], msg: 'Zn + 2NaOH → Na₂ZnO₂ + H₂↑ (Sodium Zincate)' },
+      { a: 'Al', b: 'NaOH_2X', cond: 'aqueous', products: ['NaAlO2', 'H2'], msg: '2Al + 2NaOH + 2H₂O → 2NaAlO₂ + 3H₂↑ (Sodium Aluminate)' },
+      { a: 'Al', b: 'NaOH', cond: null, products: ['NaAlO2', 'H2'], msg: '2Al + 2NaOH + 2H₂O → 2NaAlO₂ + 3H₂↑ (Sodium Aluminate)' },
+      { a: 'ZnOH2', b: 'NaOH', cond: null, products: ['Na2ZnO2', 'H2O'], msg: 'Zn(OH)₂ + 2NaOH → Na₂ZnO₂ + 2H₂O (Sodium Zincate)' },
+
+      // State-specific & Phase-sensitive Reactions
+      { a: 'Mg', b: 'H2O', stateB: 'g', cond: null, products: ['MgO', 'H2'], msg: 'Mg(s) + H₂O(g) → MgO + H₂↑' },
+      { a: 'Fe', b: 'H2O', stateB: 'g', cond: 'heat', products: ['Fe2O3', 'H2'], msg: '2Fe(s) + 3H₂O(g) → Fe₂O₃ + 3H₂↑' },
+      { a: 'C', b: 'H2O', stateB: 'g', cond: 'heat', products: ['CO', 'H2'], msg: 'C(s) + H₂O(g) → CO + H₂' },
+      { a: 'Na', b: 'H2O', stateB: 'l', cond: null, products: ['NaOH', 'H2'], msg: '2Na(s) + 2H₂O(l) → 2NaOH + H₂↑' },
+      { a: 'Na', b: 'H2O', stateB: 'g', cond: null, products: ['Na2O', 'H2'], msg: '2Na(s) + H₂O(g) → Na₂O + H₂↑' },
+      { a: 'K', b: 'H2O', stateB: 'l', cond: null, products: ['KOH', 'H2'], msg: '2K(s) + 2H₂O(l) → 2KOH + H₂↑' },
+      { a: 'Ca', b: 'H2O', stateB: 'l', cond: null, products: ['CaOH2', 'H2'], msg: 'Ca(s) + 2H₂O(l) → Ca(OH)₂ + H₂↑' },
+
+      // Diatomic synthesis
+      { a: 'H', b: 'H', cond: null, products: ['H2'], msg: 'H + H → H₂ (Hydrogen Gas)' },
+      { a: 'O', b: 'O', cond: null, products: ['O2'], msg: 'O + O → O₂ (Oxygen Gas)' },
+      { a: 'N', b: 'N', cond: null, products: ['N2'], msg: 'N + N → N₂ (Nitrogen Gas)' },
+      { a: 'Cl', b: 'Cl', cond: null, products: ['Cl2'], msg: 'Cl + Cl → Cl₂ (Chlorine Gas)' },
+
+      // Water & Hydrogen Peroxide
+      { a: 'H2', b: 'O', cond: null, products: ['H2O'], msg: 'H₂ + O → H₂O (Water)' },
+      { a: 'H2', b: 'O2', cond: null, products: ['H2O'], msg: '2H₂ + O₂ → 2H₂O (Water)' },
+      { a: 'H', b: 'O', cond: null, products: ['H2O'], msg: '2H + O → H₂O (Water)' },
+      { a: 'H2O', b: 'O', cond: null, products: ['H2O2'], msg: 'H₂O + O → H₂O₂ (Hydrogen Peroxide)' },
+      { a: 'H2', b: 'O2', cond: 'catalyst', products: ['H2O2'], msg: 'H₂ + O₂ → H₂O₂ (Hydrogen Peroxide)' },
+
+      // Carbon Oxides & Hydrocarbons
+      { a: 'C', b: 'O', cond: null, products: ['CO'], msg: 'C + O → CO (Carbon Monoxide)' },
+      { a: 'C', b: 'O2', cond: null, products: ['CO2'], msg: 'C + O₂ → CO₂ (Carbon Dioxide)' },
+      { a: 'CO', b: 'O', cond: null, products: ['CO2'], msg: 'CO + O → CO₂' },
+      { a: 'CO', b: 'O2', cond: 'heat', products: ['CO2'], msg: '2CO + O₂ → 2CO₂' },
+      { a: 'C', b: 'H2', cond: 'catalyst', products: ['CH4'], msg: 'C + 2H₂ → CH₄ (Methane)' },
+      { a: 'CH4', b: 'O2', cond: 'heat', products: ['CO2', 'H2O'], msg: 'CH₄ + 2O₂ → CO₂ + 2H₂O' },
+
+      // Sulfur & Nitrogen Compounds
+      { a: 'S', b: 'O2', cond: null, products: ['SO2'], msg: 'S + O₂ → SO₂ (Sulfur Dioxide)' },
+      { a: 'SO2', b: 'O2', cond: 'catalyst', products: ['SO3'], msg: '2SO₂ + O₂ → 2SO₃' },
+      { a: 'SO2', b: 'O', cond: null, products: ['SO3'], msg: 'SO₂ + O → SO₃' },
+      { a: 'SO3', b: 'H2O', cond: null, products: ['H2SO4'], msg: 'SO₃ + H₂O → H₂SO₄ (Sulfuric Acid)' },
+      { a: 'N2', b: 'H2', cond: 'catalyst', products: ['NH3'], msg: 'N₂ + 3H₂ → 2NH₃ (Ammonia)' },
+      { a: 'N', b: 'H2', cond: null, products: ['NH3'], msg: '2N + 3H₂ → 2NH₃ (Ammonia)' },
+      { a: 'NH3', b: 'H2O', cond: null, products: ['NH4OH'], msg: 'NH₃ + H₂O ⇌ NH₄OH' },
+
+      // Acids, Bases & Salts
+      { a: 'H', b: 'Cl', cond: null, products: ['HCl'], msg: 'H + Cl → HCl (Hydrochloric Acid)' },
+      { a: 'H2', b: 'Cl2', cond: null, products: ['HCl'], msg: 'H₂ + Cl₂ → 2HCl' },
+      { a: 'CO2', b: 'H2O', cond: null, products: ['H2CO3'], msg: 'CO₂ + H₂O ⇌ H₂CO₃ (Carbonic Acid)' },
+      { a: 'CaO', b: 'H2O', cond: null, products: ['CaOH2'], msg: 'CaO + H₂O → Ca(OH)₂' },
+      { a: 'Na', b: 'Cl', cond: null, products: ['NaCl'], msg: 'Na + Cl → NaCl (Sodium Chloride)' },
+      { a: 'Na', b: 'Cl2', cond: null, products: ['NaCl'], msg: '2Na + Cl₂ → 2NaCl' },
+      { a: 'NH3', b: 'HCl', cond: null, products: ['NH4Cl'], msg: 'NH₃ + HCl → NH₄Cl↓' },
+      { a: 'CaOH2', b: 'CO2', cond: null, products: ['CaCO3', 'H2O'], msg: 'Ca(OH)₂ + CO₂ → CaCO₃↓ + H₂O' },
+      { a: 'CaO', b: 'CO2', cond: null, products: ['CaCO3'], msg: 'CaO + CO₂ → CaCO₃' },
+      { a: 'CaCO3', b: 'H2CO3', cond: null, products: ['CaHCO3_2'], msg: 'CaCO₃ + H₂CO₃ → Ca(HCO₃)₂' },
+
+      // Metal Oxides & Single Displacement
+      { a: 'Fe', b: 'O2', cond: null, products: ['Fe2O3'], msg: '4Fe + 3O₂ → 2Fe₂O₃ (Rust)' },
+      { a: 'Fe2O3', b: 'H2O', cond: null, products: ['FeOH3'], msg: 'Fe₂O₃ + 3H₂O → 2Fe(OH)₃' },
+      { a: 'Fe2O3', b: 'CO', cond: 'heat', products: ['Fe', 'CO2'], msg: 'Fe₂O₃ + 3CO → 2Fe + 3CO₂' },
+      { a: 'Cu', b: 'O2', cond: 'heat', products: ['CuO'], msg: '2Cu + O₂ → 2CuO' },
+      { a: 'CuO', b: 'H2', cond: 'heat', products: ['Cu', 'H2O'], msg: 'CuO + H₂ → Cu + H₂O' },
+      { a: 'CuO', b: 'H2SO4', cond: null, products: ['CuSO4', 'H2O'], msg: 'CuO + H₂SO₄ → CuSO₄ + H₂O' },
+      { a: 'Mg', b: 'O2', cond: null, products: ['MgO'], msg: '2Mg + O₂ → 2MgO' },
+      { a: 'Na', b: 'O2', cond: 'heat', products: ['Na2O2'], msg: '2Na + O₂ —(Heat)→ Na₂O₂' },
+      { a: 'Na', b: 'O2', cond: null, products: ['Na2O'], msg: '4Na + O₂ → 2Na₂O' },
+      { a: 'Cu', b: 'H2SO4', cond: 'heat', products: ['CuSO4', 'SO2', 'H2O'], msg: 'Cu + 2H₂SO₄ —(Heat)→ CuSO₄ + SO₂↑ + 2H₂O' }
+    ];
+
+    /*************************************************************************
+     * SINGLE DISPLACEMENT & DOUBLE DISPLACEMENT CHEMICAL ENGINES
+     *************************************************************************/
+    const METAL_REACTIVITY = {
+      K: 10, Na: 9, Ca: 8, Mg: 7, Al: 6, Zn: 5, Fe: 4, H: 3, Cu: 2, Ag: 1, Au: 0
+    };
+
+    const COMPOUND_PARTS = {
+      HCl:     { cation: 'H',  anion: 'Cl',  anionFormula: 'Cl⁻' },
+      H2SO4:   { cation: 'H',  anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      H2CO3:   { cation: 'H',  anion: 'CO3', anionFormula: 'CO₃²⁻' },
+      NaOH:    { cation: 'Na', anion: 'OH',  anionFormula: 'OH⁻' },
+      NaOH_2X: { cation: 'Na', anion: 'OH',  anionFormula: 'OH⁻' },
+      KOH:     { cation: 'K',  anion: 'OH',  anionFormula: 'OH⁻' },
+      CaOH2:   { cation: 'Ca', anion: 'OH',  anionFormula: 'OH⁻' },
+      NH4OH:   { cation: 'NH4',anion: 'OH',  anionFormula: 'OH⁻' },
+      NaCl:    { cation: 'Na', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      KCl:     { cation: 'K',  anion: 'Cl',  anionFormula: 'Cl⁻' },
+      CaCl2:   { cation: 'Ca', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      CuCl2:   { cation: 'Cu', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      FeCl2:   { cation: 'Fe', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      ZnCl2:   { cation: 'Zn', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      NH4Cl:   { cation: 'NH4',anion: 'Cl',  anionFormula: 'Cl⁻' },
+      AgCl:    { cation: 'Ag', anion: 'Cl',  anionFormula: 'Cl⁻' },
+      CuSO4:   { cation: 'Cu', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      FeSO4:   { cation: 'Fe', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      ZnSO4:   { cation: 'Zn', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      Na2SO4:  { cation: 'Na', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      K2SO4:   { cation: 'K',  anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      CaSO4:   { cation: 'Ca', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      Ag2SO4:  { cation: 'Ag', anion: 'SO4', anionFormula: 'SO₄²⁻' },
+      CaCO3:   { cation: 'Ca', anion: 'CO3', anionFormula: 'CO₃²⁻' },
+      CuOH2:   { cation: 'Cu', anion: 'OH',  anionFormula: 'OH⁻' },
+      FeOH3:   { cation: 'Fe', anion: 'OH',  anionFormula: 'OH⁻' },
+      ZnOH2:   { cation: 'Zn', anion: 'OH',  anionFormula: 'OH⁻' }
+    };
+
+    const PAIR_MAP = {
+      'H|Cl':     'HCl',
+      'H|SO4':    'H2SO4',
+      'H|CO3':    'H2CO3',
+      'H|OH':     'H2O',
+      'Na|Cl':    'NaCl',
+      'Na|SO4':   'Na2SO4',
+      'Na|OH':    'NaOH',
+      'K|Cl':     'KCl',
+      'K|SO4':    'K2SO4',
+      'K|OH':     'KOH',
+      'Ca|Cl':    'CaCl2',
+      'Ca|SO4':   'CaSO4',
+      'Ca|OH':    'CaOH2',
+      'Ca|CO3':   'CaCO3',
+      'Cu|Cl':    'CuCl2',
+      'Cu|SO4':   'CuSO4',
+      'Cu|OH':    'CuOH2',
+      'Fe|Cl':    'FeCl2',
+      'Fe|SO4':   'FeSO4',
+      'Fe|OH':    'FeOH3',
+      'Zn|Cl':    'ZnCl2',
+      'Zn|SO4':   'ZnSO4',
+      'Zn|OH':    'ZnOH2',
+      'Ag|Cl':    'AgCl',
+      'Ag|SO4':   'Ag2SO4',
+      'NH4|Cl':   'NH4Cl',
+      'NH4|OH':   'NH4OH'
+    };
+
+    function resolveSingleDisplacement(idA, idB) {
+      let metalId = null;
+      let compId = null;
+
+      if (CHEMICALS[idA]?.kind === 'element' && METAL_REACTIVITY[idA] !== undefined && COMPOUND_PARTS[idB]) {
+        metalId = idA;
+        compId = idB;
+      } else if (CHEMICALS[idB]?.kind === 'element' && METAL_REACTIVITY[idB] !== undefined && COMPOUND_PARTS[idA]) {
+        metalId = idB;
+        compId = idA;
+      }
+
+      if (!metalId || !compId) return null;
+
+      const part = COMPOUND_PARTS[compId];
+      const metalScore = METAL_REACTIVITY[metalId];
+      const cationScore = METAL_REACTIVITY[part.cation];
+
+      if (cationScore === undefined || metalScore <= cationScore) {
+        return {
+          blocked: true,
+          reason: `${CHEMICALS[metalId].formula} cannot displace ${CHEMICALS[part.cation]?.formula || part.cation} (lower reactivity)`
+        };
+      }
+
+      const newSaltId = PAIR_MAP[`${metalId}|${part.anion}`];
+      if (!newSaltId || !CHEMICALS[newSaltId]) return null;
+
+      const displacedId = part.cation === 'H' ? 'H2' : part.cation;
+      if (!CHEMICALS[displacedId]) return null;
+
+      const prodIds = [newSaltId, displacedId];
+      const eqText = `${CHEMICALS[metalId].formula} + ${CHEMICALS[compId].formula} → ${CHEMICALS[newSaltId].formula} + ${CHEMICALS[displacedId].formula}`;
+
+      return {
+        blocked: false,
+        products: prodIds,
+        msg: `[Single Displacement] ${eqText}`
+      };
+    }
+
+    function resolveDoubleDisplacement(idA, idB) {
+      const pA = COMPOUND_PARTS[idA];
+      const pB = COMPOUND_PARTS[idB];
+      if (!pA || !pB) return null;
+
+      // Must have distinct cations and distinct anions to exchange partners
+      if (pA.cation === pB.cation || pA.anion === pB.anion) return null;
+
+      const prod1Id = PAIR_MAP[`${pA.cation}|${pB.anion}`];
+      const prod2Id = PAIR_MAP[`${pB.cation}|${pA.anion}`];
+
+      if (!prod1Id || !prod2Id || !CHEMICALS[prod1Id] || !CHEMICALS[prod2Id]) return null;
+
+      const eqText = `${CHEMICALS[idA].formula} + ${CHEMICALS[idB].formula} → ${CHEMICALS[prod1Id].formula} + ${CHEMICALS[prod2Id].formula}`;
+      return {
+        products: [prod1Id, prod2Id],
+        msg: `[Double Displacement] ${eqText}`
+      };
+    }
+
+    const UNARY_REACTIONS = [
+      { input: 'CaCO3', cond: 'heat', products: ['CaO', 'CO2'], msg: 'CaCO₃ —(Heat)→ CaO + CO₂↑' },
+      { input: 'H2O', reqState: 'l', cond: 'electrolysis', products: ['H2', 'O2'], msg: '2H₂O(l) —(Electrolysis)→ 2H₂↑ + O₂↑' },
+      { input: 'NaCl', reqState: 'l', cond: 'electrolysis', products: ['Na', 'Cl2'], msg: '2NaCl(l) —(Electrolysis)→ 2Na + Cl₂↑' },
+      { input: 'NaCl', reqState: 'aq', cond: 'electrolysis', products: ['NaOH', 'Cl2', 'H2'], msg: '2NaCl(aq) —(Electrolysis)→ 2NaOH + Cl₂↑ + H₂↑' },
+      { input: 'H2O2', cond: 'catalyst', products: ['H2O', 'O2'], msg: '2H₂O₂ —(Catalyst)→ 2H₂O + O₂↑' },
+      { input: 'H2O2', cond: 'heat', products: ['H2O', 'O2'], msg: '2H₂O₂ —(Heat)→ 2H₂O + O₂↑' },
+      { input: 'H2CO3', cond: 'heat', products: ['CO2', 'H2O'], msg: 'H₂CO₃ —(Heat)→ CO₂↑ + H₂O' },
+      { input: 'CuOH2', cond: 'heat', products: ['CuO', 'H2O'], msg: 'Cu(OH)₂ —(Heat)→ CuO + H₂O' },
+      { input: 'NH4Cl', cond: 'heat', products: ['NH3', 'HCl'], msg: 'NH₄Cl —(Heat)→ NH₃↑ + HCl↑' },
+      { input: 'CaO', cond: 'aqueous', products: ['CaOH2'], msg: 'CaO + H₂O(aq) → Ca(OH)₂' },
+      { input: 'SO3', cond: 'aqueous', products: ['H2SO4'], msg: 'SO₃ + H₂O(aq) → H₂SO₄' },
+      { input: 'CO2', cond: 'aqueous', products: ['H2CO3'], msg: 'CO₂ + H₂O(aq) ⇌ H₂CO₃' },
+      { input: 'Na', cond: 'aqueous', products: ['NaOH', 'H2'], msg: '2Na + 2H₂O(aq) → 2NaOH + H₂↑' },
+      { input: 'K', cond: 'aqueous', products: ['KOH', 'H2'], msg: '2K + 2H₂O(aq) → 2KOH + H₂↑' }
+    ];
+
+    /*************************************************************************
+     * 4. APPLICATION STATE, ZOOM/PAN & LOCAL STORAGE PERSISTENCE
+     *************************************************************************/
+    const STORAGE_KEY = 'chemcraft_unlocked_v5';
+    const CUSTOM_CHEM_KEY = 'chemcraft_custom_chems_v1';
+    const HISTORY_KEY = 'chemcraft_history_v1';
+    const THEME_KEY = 'chemcraft_theme_v1';
+    const STARTER_IDS = ['H', 'O', 'C', 'N', 'Na', 'Cl', 'Fe', 'Cu', 'S', 'Ca', 'Mg', 'Zn'];
+
+    let unlockedSet = new Set(STARTER_IDS);
+    let reactionHistory = [];
+    let activeCondition = null;
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let selectedNodeEl = null;
+    let nodeCounter = 0;
+    let suggestionIndex = 0;
+    let currentReplayEntry = null;
+    let replayTimers = [];
+
+    let viewScale = 1;
+    let viewPanX = 0;
+    let viewPanY = 0;
+    const MIN_SCALE = 0.35;
+    const MAX_SCALE = 2.5;
+
+    const appShell = document.getElementById('appShell');
+    const workspace = document.getElementById('workspace');
+    const canvasBoard = document.getElementById('canvasBoard');
+    const inventoryList = document.getElementById('inventoryList');
+    const searchInput = document.getElementById('searchInput');
+    const discoveryCounter = document.getElementById('discoveryCounter');
+    const conditionBanner = document.getElementById('conditionBanner');
+    const conditionBannerText = document.getElementById('conditionBannerText');
+    const inspectorCard = document.getElementById('inspectorCard');
+    const toastContainer = document.getElementById('toastContainer');
+    const ptDrawer = document.getElementById('ptDrawer');
+    const ptGrid = document.getElementById('ptGrid');
+    const deleteZone = document.getElementById('deleteZone');
+    const suggestionText = document.getElementById('suggestionText');
+    const historyPanel = document.getElementById('historyPanel');
+    const historyList = document.getElementById('historyList');
+    const historyCountBadge = document.getElementById('historyCountBadge');
+    const replayModal = document.getElementById('replayModal');
+    const replayStage = document.getElementById('replayStage');
+    const replayCaption = document.getElementById('replayCaption');
+    const zoomReadout = document.getElementById('zoomResetBtn');
+
+    function loadProgress() {
+      try {
+        const savedCustom = localStorage.getItem(CUSTOM_CHEM_KEY);
+        if (savedCustom) {
+          const customMap = JSON.parse(savedCustom);
+          if (customMap && typeof customMap === 'object') {
+            Object.entries(customMap).forEach(([id, chemObj]) => {
+              CHEMICALS[id] = chemObj;
+            });
+          }
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            unlockedSet = new Set([...STARTER_IDS, ...parsed.filter(id => Boolean(CHEMICALS[id]))]);
+          }
+        }
+
+        const savedHist = localStorage.getItem(HISTORY_KEY);
+        if (savedHist) {
+          const parsedHist = JSON.parse(savedHist);
+          if (Array.isArray(parsedHist)) reactionHistory = parsedHist;
+        }
+
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'light') applyTheme('light');
+      } catch (e) {}
+    }
+
+    function saveCustomChemical(chemObj) {
+      try {
+        const existingRaw = localStorage.getItem(CUSTOM_CHEM_KEY);
+        const existing = existingRaw ? JSON.parse(existingRaw) : {};
+        existing[chemObj.id] = chemObj;
+        localStorage.setItem(CUSTOM_CHEM_KEY, JSON.stringify(existing));
+      } catch (e) {}
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...unlockedSet]));
+      } catch (e) {}
+    }
+
+    function saveHistory() {
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(reactionHistory.slice(0, 80)));
+      } catch (e) {}
+    }
+
+    function applyTheme(mode) {
+      const isLight = mode === 'light';
+      document.body.classList.toggle('theme-light', isLight);
+      document.getElementById('themeIconSun').style.display = isLight ? 'block' : 'none';
+      document.getElementById('themeIconMoon').style.display = isLight ? 'none' : 'block';
+      try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+    }
+
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+      const isLight = document.body.classList.contains('theme-light');
+      applyTheme(isLight ? 'dark' : 'light');
+    });
+
+    document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
+      appShell.classList.toggle('sidebar-collapsed');
+    });
+
+    function updateDiscoveryCounter() {
+      const allCompounds = Object.values(CHEMICALS).filter(c => c.kind === 'compound');
+      const discoveredCompounds = allCompounds.filter(c => unlockedSet.has(c.id));
+      discoveryCounter.textContent = `${discoveredCompounds.length} / ${allCompounds.length}`;
+    }
+
+    /*************************************************************************
+     * 5. BOUNDARY-FREE INFINITE CANVAS ZOOM & PAN
+     *************************************************************************/
+    function applyBoardTransform() {
+      canvasBoard.style.transform = `translate(${viewPanX}px, ${viewPanY}px) scale(${viewScale})`;
+      workspace.style.backgroundPosition = `${viewPanX}px ${viewPanY}px`;
+      workspace.style.backgroundSize = `${22 * viewScale}px ${22 * viewScale}px`;
+      zoomReadout.textContent = `${Math.round(viewScale * 100)}%`;
+    }
+
+    function zoomAtPoint(newScale, pivotX, pivotY) {
+      const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      const worldX = (pivotX - viewPanX) / viewScale;
+      const worldY = (pivotY - viewPanY) / viewScale;
+      viewScale = clamped;
+      viewPanX = pivotX - worldX * viewScale;
+      viewPanY = pivotY - worldY * viewScale;
+      applyBoardTransform();
+    }
+
+    function screenToBoardCoords(clientX, clientY) {
+      const wsRect = workspace.getBoundingClientRect();
+      return {
+        x: (clientX - wsRect.left - viewPanX) / viewScale,
+        y: (clientY - wsRect.top - viewPanY) / viewScale
+      };
+    }
+
+    function getViewportCenterOnBoard() {
+      const wsRect = workspace.getBoundingClientRect();
+      return {
+        x: (wsRect.width / 2 - viewPanX) / viewScale,
+        y: (wsRect.height / 2 - viewPanY) / viewScale
+      };
+    }
+
+    workspace.addEventListener('wheel', e => {
+      e.preventDefault();
+      const wsRect = workspace.getBoundingClientRect();
+      const pivotX = e.clientX - wsRect.left;
+      const pivotY = e.clientY - wsRect.top;
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      zoomAtPoint(viewScale * factor, pivotX, pivotY);
+    }, { passive: false });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      const wsRect = workspace.getBoundingClientRect();
+      zoomAtPoint(viewScale + 0.15, wsRect.width / 2, wsRect.height / 2);
+    });
+
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      const wsRect = workspace.getBoundingClientRect();
+      zoomAtPoint(viewScale - 0.15, wsRect.width / 2, wsRect.height / 2);
+    });
+
+    zoomReadout.addEventListener('click', () => {
+      viewScale = 1;
+      viewPanX = 0;
+      viewPanY = 0;
+      applyBoardTransform();
+      showToast('Canvas view reset to 100%');
+    });
+
+    const activePointers = new Map();
+    let initialPinchDist = 0;
+    let initialPinchScale = 1;
+    let isPanningBoard = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let panOriginX = 0;
+    let panOriginY = 0;
+
+    workspace.addEventListener('pointerdown', e => {
+      if (e.target !== workspace && e.target !== canvasBoard) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 1) {
+        document.querySelectorAll('.chem-node.selected').forEach(n => n.classList.remove('selected'));
+        selectedNodeEl = null;
+
+        isPanningBoard = true;
+        workspace.classList.add('panning');
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        panOriginX = viewPanX;
+        panOriginY = viewPanY;
+      } else if (activePointers.size === 2) {
+        isPanningBoard = false;
+        const pts = [...activePointers.values()];
+        initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        initialPinchScale = viewScale;
+      }
+    });
+
+    window.addEventListener('pointermove', e => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 2) {
+        const pts = [...activePointers.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (initialPinchDist > 10) {
+          const wsRect = workspace.getBoundingClientRect();
+          const midX = (pts[0].x + pts[1].x) / 2 - wsRect.left;
+          const midY = (pts[0].y + pts[1].y) / 2 - wsRect.top;
+          zoomAtPoint(initialPinchScale * (dist / initialPinchDist), midX, midY);
+        }
+      } else if (isPanningBoard && activePointers.size === 1) {
+        viewPanX = panOriginX + (e.clientX - panStartX);
+        viewPanY = panOriginY + (e.clientY - panStartY);
+        applyBoardTransform();
+      }
+    });
+
+    const endWorkspacePointer = e => {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size === 0) {
+        isPanningBoard = false;
+        workspace.classList.remove('panning');
+      }
+    };
+    window.addEventListener('pointerup', endWorkspacePointer);
+    window.addEventListener('pointercancel', endWorkspacePointer);
+
+    /*************************************************************************
+     * 6. SMART REACTION SUGGESTIONS
+     *************************************************************************/
+    function getSmartSuggestions() {
+      const onBoardNodes = [...document.querySelectorAll('.chem-node')];
+      const boardIds = onBoardNodes.map(n => n.dataset.chemId);
+      const suggestions = [];
+
+      for (let i = 0; i < boardIds.length; i++) {
+        for (let j = i; j < boardIds.length; j++) {
+          const a = boardIds[i];
+          const b = boardIds[j];
+          const rule = PAIR_REACTIONS.find(
+            r => (r.a === a && r.b === b) || (r.a === b && r.b === a)
+          );
+          if (rule) {
+            const prodNames = rule.products.map(p => CHEMICALS[p]?.formula || p).join(' + ');
+            suggestions.push(
+              `On canvas: Combine ${CHEMICALS[a].formula} + ${CHEMICALS[b].formula} → ${prodNames}`
+            );
+          }
+          if (i !== j) {
+            const dd = resolveDoubleDisplacement(a, b);
+            if (dd) {
+              suggestions.push(`Double Displacement: ${CHEMICALS[a].formula} + ${CHEMICALS[b].formula} → ${dd.products.map(p => CHEMICALS[p].formula).join(' + ')}`);
+            }
+            const sd = resolveSingleDisplacement(a, b);
+            if (sd && !sd.blocked) {
+              suggestions.push(`Single Displacement: ${CHEMICALS[a].formula} + ${CHEMICALS[b].formula} → ${sd.products.map(p => CHEMICALS[p].formula).join(' + ')}`);
+            }
+          }
+        }
+      }
+
+      suggestions.push(
+        'Combine CuO + HCl → Copper(II) Chloride (CuCl₂) + H₂O',
+        'Double Displacement: Combine NaOH + HCl → NaCl + H₂O or AgNO₃/CaCl₂ + Na₂SO₄',
+        'Single Displacement: Combine Zn + CuSO₄ → ZnSO₄ + Cu or Fe + CuSO₄ → FeSO₄ + Cu'
+      );
+
+      return [...new Set(suggestions)];
+    }
+
+    function updateSuggestionBanner() {
+      const list = getSmartSuggestions();
+      if (list.length === 0) return;
+      suggestionIndex = suggestionIndex % list.length;
+      suggestionText.textContent = list[suggestionIndex];
+    }
+
+    document.getElementById('nextSuggestionBtn').addEventListener('click', () => {
+      suggestionIndex++;
+      updateSuggestionBanner();
+    });
+
+    /*************************************************************************
+     * 7. REACTION HISTORY & ANIMATED REPLAY
+     *************************************************************************/
+    function logReactionToHistory(reactantIds, productIds, condition, equationText) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = {
+        id: Date.now() + Math.random(),
+        reactants: reactantIds,
+        products: productIds,
+        condition: condition || null,
+        equation: equationText,
+        time: timeStr
+      };
+      reactionHistory.unshift(entry);
+      if (reactionHistory.length > 80) reactionHistory.pop();
+      saveHistory();
+      renderHistoryList();
+    }
+
+    function renderHistoryList() {
+      historyCountBadge.textContent = reactionHistory.length;
+      if (reactionHistory.length === 0) {
+        historyList.innerHTML = `<div class="history-empty">No reactions performed yet. Combine elements on the canvas to log reactions here.</div>`;
+        return;
+      }
+
+      historyList.innerHTML = '';
+      reactionHistory.forEach(entry => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        const condLabel = entry.condition ? `Condition: ${entry.condition.toUpperCase()}` : 'Standard conditions';
+
+        item.innerHTML = `
+          <div class="hist-item-top">
+            <span class="hist-eq">${entry.equation}</span>
+            <span class="hist-replay-badge">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Replay
+            </span>
+          </div>
+          <div class="hist-meta">
+            <span>${condLabel}</span>
+            <span>${entry.time}</span>
+          </div>
+        `;
+
+        item.addEventListener('click', () => {
+          openReactionReplay(entry);
+        });
+
+        historyList.appendChild(item);
+      });
+    }
+
+    function clearReplayTimers() {
+      replayTimers.forEach(t => clearTimeout(t));
+      replayTimers = [];
+    }
+
+    function openReactionReplay(entry) {
+      currentReplayEntry = entry;
+      document.getElementById('replayTimestamp').textContent = `Recorded at ${entry.time}${entry.condition ? ' • Condition: ' + entry.condition.toUpperCase() : ''}`;
+      replayModal.classList.add('open');
+      playReactionAnimation(entry);
+    }
+
+    function playReactionAnimation(entry) {
+      clearReplayTimers();
+      replayStage.innerHTML = '';
+      replayCaption.textContent = 'Preparing reactants...';
+
+      const steps = [];
+
+      entry.reactants.forEach((rId, idx) => {
+        const chem = CHEMICALS[rId];
+        if (!chem) return;
+        if (idx > 0) {
+          const plusEl = document.createElement('div');
+          plusEl.className = 'stage-op';
+          plusEl.textContent = '+';
+          replayStage.appendChild(plusEl);
+          steps.push({ el: plusEl, caption: `Combining with ${chem.name} (${chem.formula})...` });
+        }
+
+        const cardEl = document.createElement('div');
+        cardEl.className = 'stage-card';
+        cardEl.innerHTML = `
+          <div class="stage-card-dot" style="background:${chem.color}"></div>
+          <div class="stage-card-formula">${chem.formula}</div>
+          <div class="stage-card-name">${chem.name}</div>
+        `;
+        replayStage.appendChild(cardEl);
+        steps.push({
+          el: cardEl,
+          caption: idx === 0 ? `Starting with ${chem.name} (${chem.formula})` : `Adding ${chem.name} (${chem.formula})`
+        });
+      });
+
+      const arrowWrap = document.createElement('div');
+      arrowWrap.className = 'stage-arrow-wrap';
+      arrowWrap.innerHTML = `
+        <span class="stage-cond-tag">${entry.condition ? entry.condition : 'reacts'}</span>
+        <span style="font-size:20px; font-weight:700; color:var(--text-primary);">→</span>
+      `;
+      replayStage.appendChild(arrowWrap);
+      steps.push({
+        el: arrowWrap,
+        caption: entry.condition ? `Applying ${entry.condition.toUpperCase()} — that gives...` : 'Reaction proceeds — that gives...'
+      });
+
+      entry.products.forEach((pId, idx) => {
+        const chem = CHEMICALS[pId];
+        if (!chem) return;
+        if (idx > 0) {
+          const plusEl = document.createElement('div');
+          plusEl.className = 'stage-op';
+          plusEl.textContent = '+';
+          replayStage.appendChild(plusEl);
+          steps.push({ el: plusEl, caption: `Along with ${chem.name}...` });
+        }
+
+        const prodCard = document.createElement('div');
+        prodCard.className = 'stage-card';
+        prodCard.style.borderColor = 'var(--text-primary)';
+        prodCard.innerHTML = `
+          <div class="stage-card-dot" style="background:${chem.color}"></div>
+          <div class="stage-card-formula">${chem.formula}</div>
+          <div class="stage-card-name">${chem.name}</div>
+        `;
+        replayStage.appendChild(prodCard);
+        steps.push({ el: prodCard, caption: `Formed: ${chem.name} (${chem.formula})` });
+      });
+
+      steps.forEach((step, index) => {
+        const timer = setTimeout(() => {
+          step.el.classList.add('show');
+          replayCaption.textContent = step.caption;
+        }, 300 + index * 560);
+        replayTimers.push(timer);
+      });
+
+      const finalTimer = setTimeout(() => {
+        replayCaption.textContent = `Complete: ${entry.equation}`;
+      }, 300 + steps.length * 560 + 240);
+      replayTimers.push(finalTimer);
+    }
+
+    document.getElementById('historyToggleBtn').addEventListener('click', () => {
+      historyPanel.classList.toggle('open');
+    });
+
+    document.getElementById('closeHistoryBtn').addEventListener('click', () => {
+      historyPanel.classList.remove('open');
+    });
+
+    document.getElementById('closeReplayBtn').addEventListener('click', () => {
+      clearReplayTimers();
+      replayModal.classList.remove('open');
+    });
+
+    replayModal.addEventListener('click', e => {
+      if (e.target === replayModal) {
+        clearReplayTimers();
+        replayModal.classList.remove('open');
+      }
+    });
+
+    document.getElementById('replayAgainBtn').addEventListener('click', () => {
+      if (currentReplayEntry) playReactionAnimation(currentReplayEntry);
+    });
+
+    document.getElementById('spawnFromReplayBtn').addEventListener('click', () => {
+      if (!currentReplayEntry) return;
+      const center = getViewportCenterOnBoard();
+      currentReplayEntry.products.forEach((pId, idx) => {
+        spawnNode(pId, center.x - 99 + idx * 120, center.y - 45, true);
+      });
+      clearReplayTimers();
+      replayModal.classList.remove('open');
+      historyPanel.classList.remove('open');
+    });
+
+    /*************************************************************************
+     * 8. TOAST & INSPECTOR
+     *************************************************************************/
+    function showToast(message, type = 'default') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = message;
+      toastContainer.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(5px)';
+        el.style.transition = 'opacity 0.18s, transform 0.18s';
+        setTimeout(() => el.remove(), 180);
+      }, 2400);
+    }
+
+    const STATE_FULL_NAMES = {
+      s: 'Solid (s)',
+      l: 'Liquid (l)',
+      g: 'Gas (g)',
+      aq: 'Aqueous (aq)'
+    };
+
+    function getPhaseDisplayName(chem, state) {
+      if (chem.id === 'H2O') {
+        if (state === 's') return 'Ice (Solid)';
+        if (state === 'l') return 'Water (Liquid)';
+        if (state === 'g') return 'Steam (Gas)';
+      }
+      if (chem.id === 'CO2' && state === 's') return 'Dry Ice (Solid)';
+      if (chem.id === 'NaCl' && state === 'l') return 'Molten Salt (Liquid)';
+      if (chem.id === 'NaCl' && state === 'aq') return 'Brine Solution (aq)';
+      return chem.name;
+    }
+
+    function changeNodeState(nodeEl, newState) {
+      const chem = CHEMICALS[nodeEl.dataset.chemId];
+      if (!chem || !chem.possibleStates.includes(newState)) return;
+
+      nodeEl.dataset.state = newState;
+      nodeEl.querySelectorAll('.state-opt').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.st === newState);
+      });
+      nodeEl.querySelector('.node-name').textContent = getPhaseDisplayName(chem, newState);
+
+      applyReactionVisualEffects(nodeEl, chem, newState);
+      updateSuggestionBanner();
+
+      if (selectedNodeEl === nodeEl) {
+        inspectChemical(chem.id, nodeEl);
+      }
+
+      showToast(`Converted ${chem.formula} to ${STATE_FULL_NAMES[newState]}`);
+    }
+
+    function inspectChemical(chemId, nodeEl = null) {
+      const chem = CHEMICALS[chemId];
+      if (!chem) return;
+
+      document.querySelectorAll('.chem-node.selected').forEach(n => n.classList.remove('selected'));
+      if (nodeEl) {
+        nodeEl.classList.add('selected');
+        selectedNodeEl = nodeEl;
+      }
+
+      const activeState = nodeEl ? nodeEl.dataset.state : chem.state;
+
+      document.getElementById('inspSwatch').style.backgroundColor = chem.color;
+      document.getElementById('inspFormula').textContent = chem.formula;
+      document.getElementById('inspName').textContent = getPhaseDisplayName(chem, activeState);
+      document.getElementById('inspEquation').textContent = chem.eq;
+      document.getElementById('inspMass').textContent = chem.mass;
+      document.getElementById('inspState').textContent = STATE_FULL_NAMES[activeState] || activeState;
+      document.getElementById('inspNature').textContent = chem.nature;
+      document.getElementById('inspAppearance').textContent = chem.appearance;
+      document.getElementById('inspDesc').textContent = chem.desc;
+
+      const stateBtnsWrap = document.getElementById('inspStateBtns');
+      stateBtnsWrap.innerHTML = '';
+      chem.possibleStates.forEach(st => {
+        const b = document.createElement('button');
+        b.className = 'insp-state-btn' + (st === activeState ? ' active' : '');
+        b.textContent = st.toUpperCase();
+        b.title = `Convert to ${STATE_FULL_NAMES[st]}`;
+        b.addEventListener('click', () => {
+          if (selectedNodeEl) changeNodeState(selectedNodeEl, st);
+        });
+        stateBtnsWrap.appendChild(b);
+      });
+
+      inspectorCard.classList.add('visible');
+    }
+
+    document.getElementById('closeInspectorBtn').addEventListener('click', () => {
+      inspectorCard.classList.remove('visible');
+      document.querySelectorAll('.chem-node.selected').forEach(n => n.classList.remove('selected'));
+      selectedNodeEl = null;
+    });
+
+    /*************************************************************************
+     * 9. TOUCH-SAFE TAP & INVENTORY / PERIODIC TABLE
+     *************************************************************************/
+    function attachSafeTap(element, onTapCallback) {
+      let startX = 0;
+      let startY = 0;
+      let startTime = 0;
+      let moved = false;
+
+      element.addEventListener('pointerdown', e => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        startX = e.clientX;
+        startY = e.clientY;
+        startTime = Date.now();
+        moved = false;
+      }, { passive: true });
+
+      element.addEventListener('pointermove', e => {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+          moved = true;
+        }
+      }, { passive: true });
+
+      element.addEventListener('pointerup', e => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+        const duration = Date.now() - startTime;
+        if (!moved && dist < 8 && duration < 500) {
+          onTapCallback(e);
+        }
+      });
+    }
+
+    function renderInventory() {
+      inventoryList.innerHTML = '';
+      const q = searchQuery.trim().toLowerCase();
+
+      const items = [...unlockedSet]
+        .map(id => CHEMICALS[id])
+        .filter(Boolean)
+        .filter(item => {
+          if (currentFilter !== 'all' && item.kind !== currentFilter) return false;
+          if (!q) return true;
+          return (
+            item.formula.toLowerCase().includes(q) ||
+            item.id.toLowerCase().includes(q) ||
+            item.name.toLowerCase().includes(q)
+          );
+        });
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'inv-item';
+        card.innerHTML = `
+          <div class="inv-top">
+            <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+              <span class="inv-swatch" style="background:${item.color}"></span>
+              <span class="inv-formula">${item.formula}</span>
+            </div>
+            <span class="inv-state">(${item.state})</span>
+          </div>
+          <div class="inv-name" title="${item.name}">${item.name}</div>
+        `;
+
+        attachSafeTap(card, () => {
+          const center = getViewportCenterOnBoard();
+          const x = center.x - 99 + (Math.random() * 110 - 55);
+          const y = center.y - 45 + (Math.random() * 90 - 45);
+          spawnNode(item.id, x, y, true);
+        });
+
+        inventoryList.appendChild(card);
+      });
+    }
+
+    function renderPeriodicTable() {
+      ptGrid.innerHTML = '';
+      PERIODIC_ELEMENTS.forEach(el => {
+        const cell = document.createElement('div');
+        cell.className = 'pt-cell';
+        cell.dataset.cat = el.cat;
+        cell.style.gridRow = el.r;
+        cell.style.gridColumn = el.c;
+        cell.title = `${el.name} (${el.sym}) — Tap to add to canvas`;
+
+        cell.innerHTML = `
+          <span class="pt-num">${el.z}</span>
+          <span class="pt-sym">${el.sym}</span>
+          <span class="pt-el-name">${el.name}</span>
+        `;
+
+        attachSafeTap(cell, () => {
+          unlockedSet.add(el.sym);
+          saveProgress();
+          renderInventory();
+          const center = getViewportCenterOnBoard();
+          const x = center.x - 99 + (Math.random() * 120 - 60);
+          const y = center.y - 45 + (Math.random() * 100 - 50);
+          spawnNode(el.sym, x, y, true);
+          ptDrawer.classList.remove('open');
+        });
+
+        ptGrid.appendChild(cell);
+      });
+    }
+
+    /*************************************************************************
+     * 10. WORKSPACE NODES & DRAGGING
+     *************************************************************************/
+    function applyReactionVisualEffects(nodeEl, chem, stateOverride = null) {
+      const fxLayer = nodeEl.querySelector('.fx-layer');
+      if (!fxLayer) return;
+      const currentState = stateOverride || nodeEl.dataset.state || chem.state;
+
+      if (currentState === 'g') {
+        for (let i = 0; i < 6; i++) {
+          const b = document.createElement('span');
+          b.className = 'bubble-dot';
+          b.style.left = `${14 + Math.random() * 160}px`;
+          b.style.animationDelay = `${Math.random() * 0.35}s`;
+          b.style.backgroundColor = chem.color;
+          fxLayer.appendChild(b);
+          setTimeout(() => b.remove(), 1500);
+        }
+      }
+
+      if (chem.fx === 'precipitate' || chem.tags.includes('Precipitate')) {
+        if (!fxLayer.querySelector('.precipitate-layer')) {
+          const sed = document.createElement('div');
+          sed.className = 'precipitate-layer';
+          sed.style.background = chem.color;
+          fxLayer.appendChild(sed);
+        }
+      }
+    }
+
+    function deleteWorkspaceNode(nodeEl) {
+      if (!nodeEl) return;
+      if (selectedNodeEl === nodeEl) {
+        inspectorCard.classList.remove('visible');
+        selectedNodeEl = null;
+      }
+      nodeEl.remove();
+      updateSuggestionBanner();
+    }
+
+    deleteZone.addEventListener('click', () => {
+      if (selectedNodeEl) {
+        const name = selectedNodeEl.querySelector('.node-formula').textContent;
+        deleteWorkspaceNode(selectedNodeEl);
+        showToast(`Removed ${name}`);
+      } else {
+        showToast('Drag any card onto the trash icon to delete it');
+      }
+    });
+
+    function spawnNode(chemId, x, y, animate = true) {
+      const chem = CHEMICALS[chemId];
+      if (!chem) return null;
+
+      const uid = `node_${++nodeCounter}`;
+      const node = document.createElement('div');
+      node.className = 'chem-node' + (animate ? ' anim-spawn' : '');
+      node.dataset.uid = uid;
+      node.dataset.chemId = chemId;
+      node.dataset.state = chem.state;
+
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+
+      const statePillsHtml = chem.possibleStates
+        .map(st => `<button type="button" class="state-opt ${st === chem.state ? 'active' : ''}" data-st="${st}" title="Convert to ${STATE_FULL_NAMES[st]}">${st}</button>`)
+        .join('');
+
+      const tagsHtml = chem.tags
+        .map(t => `<span class="hazard-tag">${t}</span>`)
+        .join('');
+
+      node.innerHTML = `
+        <div class="node-color-strip" style="background:${chem.color}"></div>
+        <div class="fx-layer"></div>
+        <div class="node-header">
+          <div class="node-formula-wrap">
+            <span class="node-swatch" style="background:${chem.color}"></span>
+            <span class="node-formula">${chem.formula}</span>
+          </div>
+          <div class="state-switcher">${statePillsHtml}</div>
+        </div>
+        <div class="node-name" title="${chem.name}">${getPhaseDisplayName(chem, chem.state)}</div>
+        <div class="node-tags">${tagsHtml}</div>
+      `;
+
+      node.querySelectorAll('.state-opt').forEach(btn => {
+        btn.addEventListener('pointerdown', e => e.stopPropagation());
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          changeNodeState(node, btn.dataset.st);
+        });
+      });
+
+      canvasBoard.appendChild(node);
+
+      if (animate) {
+        applyReactionVisualEffects(node, chem, chem.state);
+      }
+
+      attachNodeInteractions(node);
+      updateSuggestionBanner();
+      return node;
+    }
+
+    function attachNodeInteractions(node) {
+      node.addEventListener('pointerdown', e => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.stopPropagation();
+        startNodeDrag(node, e);
+      });
+    }
+
+    function isOverDeleteZone(clientX, clientY) {
+      const dzRect = deleteZone.getBoundingClientRect();
+      const pad = 14;
+      return (
+        clientX >= dzRect.left - pad &&
+        clientX <= dzRect.right + pad &&
+        clientY >= dzRect.top - pad &&
+        clientY <= dzRect.bottom + pad
+      );
+    }
+
+    function startNodeDrag(node, initialEvent) {
+      const startBoardPt = screenToBoardCoords(initialEvent.clientX, initialEvent.clientY);
+      const startNodeX = parseFloat(node.style.left);
+      const startNodeY = parseFloat(node.style.top);
+      const offsetX = startBoardPt.x - startNodeX;
+      const offsetY = startBoardPt.y - startNodeY;
+
+      const startClientX = initialEvent.clientX;
+      const startClientY = initialEvent.clientY;
+      let hasMoved = false;
+      let currentTarget = null;
+      let hoveringDelete = false;
+
+      node.classList.add('dragging');
+      deleteZone.classList.add('drag-active');
+
+      if (node.setPointerCapture) {
+        try { node.setPointerCapture(initialEvent.pointerId); } catch (_) {}
+      }
+
+      const onPointerMove = ev => {
+        if (ev.pointerId !== initialEvent.pointerId) return;
+        const dx = ev.clientX - startClientX;
+        const dy = ev.clientY - startClientY;
+        if (!hasMoved && Math.hypot(dx, dy) > 5) {
+          hasMoved = true;
+        }
+        if (!hasMoved) return;
+
+        const pt = screenToBoardCoords(ev.clientX, ev.clientY);
+        node.style.left = `${pt.x - offsetX}px`;
+        node.style.top = `${pt.y - offsetY}px`;
+
+        hoveringDelete = isOverDeleteZone(ev.clientX, ev.clientY);
+        deleteZone.classList.toggle('drag-hover', hoveringDelete);
+
+        const candidate = hoveringDelete ? null : findOverlappingNode(node);
+        if (currentTarget && currentTarget !== candidate) {
+          currentTarget.classList.remove('merge-target');
+        }
+        currentTarget = candidate;
+        if (currentTarget) {
+          currentTarget.classList.add('merge-target');
+        }
+      };
+
+      const onPointerUp = ev => {
+        if (ev.pointerId !== initialEvent.pointerId) return;
+        node.classList.remove('dragging');
+        deleteZone.classList.remove('drag-active', 'drag-hover');
+        if (currentTarget) {
+          currentTarget.classList.remove('merge-target');
+        }
+
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+
+        if (!hasMoved) {
+          if (activeCondition) {
+            const unarySuccess = attemptUnaryReaction(node, activeCondition);
+            if (unarySuccess) return;
+          }
+          inspectChemical(node.dataset.chemId, node);
+          return;
+        }
+
+        if (hoveringDelete || isOverDeleteZone(ev.clientX, ev.clientY)) {
+          const formula = node.querySelector('.node-formula').textContent;
+          deleteWorkspaceNode(node);
+          showToast(`Deleted ${formula}`);
+          return;
+        }
+
+        if (currentTarget) {
+          attemptPairReaction(node, currentTarget);
+        }
+      };
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function findOverlappingNode(draggedNode) {
+      const r1 = draggedNode.getBoundingClientRect();
+      const c1x = r1.left + r1.width / 2;
+      const c1y = r1.top + r1.height / 2;
+
+      let closest = null;
+      let minDist = Infinity;
+      const snapDist = 120 * viewScale;
+
+      document.querySelectorAll('.chem-node').forEach(other => {
+        if (other === draggedNode) return;
+        const r2 = other.getBoundingClientRect();
+        const c2x = r2.left + r2.width / 2;
+        const c2y = r2.top + r2.height / 2;
+
+        const dist = Math.hypot(c1x - c2x, c1y - c2y);
+        if (dist < snapDist && dist < minDist) {
+          minDist = dist;
+          closest = other;
+        }
+      });
+
+      return closest;
+    }
+
+    /*************************************************************************
+     * 11. REACTION EXECUTION (EXPLICIT -> SINGLE DISPLACEMENT -> DOUBLE DISPLACEMENT -> 2X)
+     *************************************************************************/
+    function matchesPairRule(rule, idA, stA, idB, stB, cond) {
+      if (rule.cond !== cond) return false;
+
+      const directMatch =
+        rule.a === idA &&
+        rule.b === idB &&
+        (!rule.stateA || rule.stateA === stA) &&
+        (!rule.stateB || rule.stateB === stB);
+
+      if (directMatch) return true;
+
+      const reverseMatch =
+        rule.a === idB &&
+        rule.b === idA &&
+        (!rule.stateA || rule.stateA === stB) &&
+        (!rule.stateB || rule.stateB === stA);
+
+      return reverseMatch;
+    }
+
+    function ensureDoubledChemical(chemId) {
+      const baseChem = CHEMICALS[chemId];
+      if (!baseChem) return null;
+
+      const doubleId = `${chemId}_2X`;
+      if (CHEMICALS[doubleId]) return doubleId;
+
+      const doubleChem = {
+        id: doubleId,
+        formula: `2${baseChem.formula}`,
+        name: `Double ${baseChem.name} (2×)`,
+        kind: 'compound',
+        state: baseChem.state,
+        possibleStates: [...baseChem.possibleStates],
+        color: baseChem.color,
+        appearance: baseChem.appearance,
+        mass: baseChem.mass,
+        nature: baseChem.nature,
+        tags: [...baseChem.tags],
+        fx: baseChem.fx,
+        eq: `${baseChem.formula} + ${baseChem.formula} → 2${baseChem.formula}`,
+        desc: `Stoichiometric 2× unit of ${baseChem.name} for multi-equivalent reactions.`
+      };
+
+      CHEMICALS[doubleId] = doubleChem;
+      saveCustomChemical(doubleChem);
+      return doubleId;
+    }
+
+    function attemptPairReaction(nodeA, nodeB) {
+      const idA = nodeA.dataset.chemId;
+      const stA = nodeA.dataset.state;
+      const idB = nodeB.dataset.chemId;
+      const stB = nodeB.dataset.state;
+
+      let usedCond = activeCondition;
+      let match = PAIR_REACTIONS.find(r => matchesPairRule(r, idA, stA, idB, stB, activeCondition));
+
+      if (!match) {
+        usedCond = null;
+        match = PAIR_REACTIONS.find(r => matchesPairRule(r, idA, stA, idB, stB, null));
+      }
+
+      // Single Displacement check
+      if (!match) {
+        const sd = resolveSingleDisplacement(idA, idB);
+        if (sd && sd.blocked) {
+          nodeA.classList.remove('anim-shake');
+          nodeB.classList.remove('anim-shake');
+          void nodeA.offsetWidth;
+          nodeA.classList.add('anim-shake');
+          nodeB.classList.add('anim-shake');
+          showToast(sd.reason, 'warn');
+          return;
+        }
+        if (sd && !sd.blocked) {
+          match = { a: idA, b: idB, cond: usedCond, products: sd.products, msg: sd.msg };
+        }
+      }
+
+      // Double Displacement check (AB + CD -> AD + CB)
+      if (!match) {
+        const dd = resolveDoubleDisplacement(idA, idB);
+        if (dd) {
+          match = { a: idA, b: idB, cond: usedCond, products: dd.products, msg: dd.msg };
+        }
+      }
+
+      // Same-substance 2X stoichiometric unit
+      if (!match && idA === idB && CHEMICALS[idA]) {
+        const doubledId = ensureDoubledChemical(idA);
+        if (doubledId) {
+          match = {
+            a: idA,
+            b: idB,
+            cond: usedCond,
+            products: [doubledId],
+            msg: `${CHEMICALS[idA].formula} + ${CHEMICALS[idB].formula} → ${CHEMICALS[doubledId].formula}`
+          };
+        }
+      }
+
+      if (!match) {
+        const diffStateMatch = PAIR_REACTIONS.find(
+          r => (r.a === idA && r.b === idB) || (r.a === idB && r.b === idA)
+        );
+
+        nodeA.classList.remove('anim-shake');
+        nodeB.classList.remove('anim-shake');
+        void nodeA.offsetWidth;
+        nodeA.classList.add('anim-shake');
+        nodeB.classList.add('anim-shake');
+
+        if (diffStateMatch && (diffStateMatch.stateA || diffStateMatch.stateB)) {
+          const reqState = diffStateMatch.stateB || diffStateMatch.stateA;
+          const targetChem = diffStateMatch.stateB ? diffStateMatch.b : diffStateMatch.a;
+          showToast(`Convert ${CHEMICALS[targetChem].formula} to (${reqState}) state to react`, 'warn');
+        } else if (diffStateMatch && diffStateMatch.cond) {
+          showToast(`Requires [${diffStateMatch.cond.toUpperCase()}] condition`, 'warn');
+        } else {
+          showToast('No reaction under current state/conditions', 'warn');
+        }
+        return;
+      }
+
+      const xA = parseFloat(nodeA.style.left);
+      const yA = parseFloat(nodeA.style.top);
+      const xB = parseFloat(nodeB.style.left);
+      const yB = parseFloat(nodeB.style.top);
+      const midX = (xA + xB) / 2;
+      const midY = (yA + yB) / 2;
+
+      deleteWorkspaceNode(nodeA);
+      deleteWorkspaceNode(nodeB);
+
+      logReactionToHistory([idA, idB], match.products, usedCond, match.msg);
+      spawnProducts(match.products, midX, midY, match.msg);
+    }
+
+    function attemptUnaryReaction(node, condition) {
+      const id = node.dataset.chemId;
+      const st = node.dataset.state;
+
+      const match = UNARY_REACTIONS.find(
+        r => r.input === id && r.cond === condition && (!r.reqState || r.reqState === st)
+      );
+
+      if (!match) {
+        const stateHint = UNARY_REACTIONS.find(r => r.input === id && r.cond === condition && r.reqState);
+        if (stateHint) {
+          node.classList.remove('anim-shake');
+          void node.offsetWidth;
+          node.classList.add('anim-shake');
+          showToast(`Convert ${CHEMICALS[id].formula} to (${stateHint.reqState}) state first`, 'warn');
+          return true;
+        }
+        return false;
+      }
+
+      const x = parseFloat(node.style.left);
+      const y = parseFloat(node.style.top);
+      deleteWorkspaceNode(node);
+
+      logReactionToHistory([id], match.products, condition, match.msg);
+      spawnProducts(match.products, x, y, match.msg);
+      return true;
+    }
+
+    function spawnProducts(productIds, baseX, baseY, message) {
+      let newlyUnlocked = false;
+      let lastSpawnedNode = null;
+
+      productIds.forEach((prodId, idx) => {
+        if (!CHEMICALS[prodId]) return;
+        if (!unlockedSet.has(prodId)) {
+          unlockedSet.add(prodId);
+          newlyUnlocked = true;
+        }
+        const offsetX = productIds.length > 1 ? (idx === 0 ? -105 : 105) : 0;
+        const offsetY = productIds.length > 2 && idx === 2 ? 86 : 0;
+        lastSpawnedNode = spawnNode(prodId, baseX + offsetX, baseY + offsetY, true);
+      });
+
+      if (newlyUnlocked) {
+        saveProgress();
+        renderInventory();
+        updateDiscoveryCounter();
+        showToast(`Saved & Discovered: ${message}`);
+      } else {
+        showToast(message);
+      }
+
+      updateSuggestionBanner();
+
+      if (lastSpawnedNode) {
+        inspectChemical(lastSpawnedNode.dataset.chemId, lastSpawnedNode);
+      }
+    }
+
+    /*************************************************************************
+     * 12. CONTROLS & INITIALIZATION
+     *************************************************************************/
+    document.querySelectorAll('.cond-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cond = btn.dataset.cond;
+        if (activeCondition === cond) {
+          activeCondition = null;
+          btn.classList.remove('active');
+          conditionBanner.classList.remove('visible');
+        } else {
+          document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
+          activeCondition = cond;
+          btn.classList.add('active');
+
+          const labels = {
+            heat: 'Heat Active — Combine reactants or tap a compound to decompose',
+            electrolysis: 'Electrolysis Active — Tap H₂O(l), NaCl(l), or NaCl(aq) to split',
+            aqueous: 'Aqueous Medium Active — Tap oxides or metals to hydrate',
+            catalyst: 'Catalyst Active — Enables Haber, Contact & peroxide reactions'
+          };
+          conditionBannerText.textContent = labels[cond];
+          conditionBanner.classList.add('visible');
+        }
+      });
+    });
+
+    searchInput.addEventListener('input', e => {
+      searchQuery = e.target.value;
+      renderInventory();
+    });
+
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderInventory();
+      });
+    });
+
+    document.getElementById('clearCanvasBtn').addEventListener('click', () => {
+      document.querySelectorAll('.chem-node').forEach(n => n.remove());
+      inspectorCard.classList.remove('visible');
+      selectedNodeEl = null;
+      updateSuggestionBanner();
+      showToast('Canvas cleared');
+    });
+
+    document.getElementById('resetProgressBtn').addEventListener('click', () => {
+      unlockedSet = new Set(STARTER_IDS);
+      reactionHistory = [];
+      try { localStorage.removeItem(CUSTOM_CHEM_KEY); } catch (e) {}
+      saveProgress();
+      saveHistory();
+      renderInventory();
+      renderHistoryList();
+      updateDiscoveryCounter();
+      document.querySelectorAll('.chem-node').forEach(n => n.remove());
+      inspectorCard.classList.remove('visible');
+      selectedNodeEl = null;
+      updateSuggestionBanner();
+      showToast('Lab progress & history reset');
+    });
+
+    document.getElementById('openPtBtn').addEventListener('click', () => {
+      ptDrawer.classList.add('open');
+    });
+
+    document.getElementById('closePtBtn').addEventListener('click', () => {
+      ptDrawer.classList.remove('open');
+    });
+
+    ptDrawer.addEventListener('click', e => {
+      if (e.target === ptDrawer) {
+        ptDrawer.classList.remove('open');
+      }
+    });
+
+    loadProgress();
+    renderInventory();
+    renderPeriodicTable();
+    renderHistoryList();
+    updateDiscoveryCounter();
+    applyBoardTransform();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const center = getViewportCenterOnBoard();
+      spawnNode('CuO', center.x - 210, center.y - 45, true);
+      spawnNode('HCl', center.x + 15, center.y - 45, true);
+      updateSuggestionBanner();
+    });
+  </script>
+</body>
+</html>
